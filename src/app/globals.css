@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+/* Asualy Theme – from Color.pdf palette
+   E8D6CB  D0ADA7  AD6A6C  5D2E46  B58DB6 */
+
+:root {
+  /* Primary – Lavender (#B58DB6) – buttons, links, CTAs, active tabs */
+  --accent: #b58db6;
+  --accent-hover: #c9a5c9;
+  --accent-muted: rgba(181, 141, 182, 0.2);
+
+  /* Accent – Dusty rose (#AD6A6C) – badges, highlights, success moments */
+  --peach: #ad6a6c;
+  --peach-muted: rgba(173, 106, 108, 0.25);
+
+  /* Background – deep burgundy */
+  --background: #2d1b2e;
+  --background-gradient: linear-gradient(135deg, #2d1b2e 0%, #3d1f33 50%, #2a162b 100%);
+
+  /* Surfaces – burgundy (#5D2E46) – cards, panels, nav bars */
+  --card: #5d2e46;
+  --card-hover: #6d3a54;
+
+  /* Text – cream (#E8D6CB) */
+  --foreground: #e8d6cb;
+
+  /* Secondary text – soft dusty rose (#D0ADA7) */
+  --muted: #d0ada7;
+  --muted-strong: #b8928f;
+
+  /* Borders & dividers */
+  --border: #6d3a54;
+  --border-subtle: rgba(109, 58, 84, 0.5);
+
+  /* Inputs */
+  --input-bg: rgba(93, 46, 70, 0.4);
+  --input-border: var(--border);
+  --input-focus-ring: var(--accent);
+
+  /* Error */
+  --error-bg: rgba(173, 106, 108, 0.2);
+  --error-border: #ad6a6c;
+  --error-text: #e8a5a7;
+}
+
+/* Light mode – cream base */
+@media (prefers-color-scheme: light) {
+  :root {
+    --background: #f5ebe6;
+    --background-gradient: linear-gradient(135deg, #f5ebe6 0%, #e8d6cb 50%, #f0e4de 100%);
+    --card: #ffffff;
+    --card-hover: #faf6f3;
+    --foreground: #5d2e46;
+    --muted: #8b5e6b;
+    --muted-strong: #6d3a54;
+    --border: #d0ada7;
+    --border-subtle: rgba(208, 173, 167, 0.5);
+    --input-bg: #ffffff;
+    --input-border: #d0ada7;
+    --error-bg: rgba(173, 106, 108, 0.15);
+    --error-border: #ad6a6c;
+    --error-text: #8b3a3d;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Shared component styles – use these for consistency */
+.asualy-btn-primary {
+  background: var(--accent);
+  color: white;
+  transition: background 0.2s ease, transform 0.05s ease;
+}
+.asualy-btn-primary:hover {
+  background: var(--accent-hover);
+}
+.asualy-btn-primary:active {
+  transform: scale(0.99);
+}
+
+.asualy-btn-secondary {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.asualy-btn-secondary:hover {
+  background: var(--card-hover);
+  border-color: var(--accent);
+}
+
+.asualy-input {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--foreground);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.asualy-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-muted);
+}
+.asualy-input::placeholder {
+  color: var(--muted);
+}
+
+.asualy-card {
+  background: var(--card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1rem;
+}
