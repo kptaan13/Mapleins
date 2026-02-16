@@ -73,8 +73,12 @@ export default function RoomsPage() {
       interface MembershipRow {
         room: Room | null;
       }
-      const flattened: Room[] =
-        (data as MembershipRow[] | null)?.map((row) => row.room).filter((r): r is Room => !!r) ?? [];
+
+      const rows = (data ?? []) as unknown as MembershipRow[];
+
+      const flattened: Room[] = rows
+        .map((row) => row.room)
+        .filter((r): r is Room => !!r);
 
       setRooms(flattened);
       setLoading(false);
