@@ -22,6 +22,7 @@ function playNotificationSound() {
       audioContext = new AC();
     }
     const ctx = audioContext;
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
