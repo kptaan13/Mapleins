@@ -21,7 +21,19 @@ export default function AuthCallbackPage() {
         return;
       }
 
-      router.push('/onboarding');
+      // Match sign-in logic: profile missing → onboarding, profile exists → app
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', data.session.user.id)
+        .maybeSingle();
+
+      if (profileError || !profile) {
+        router.push('/onboarding');
+        return;
+      }
+
+      router.push('/app');
     };
 
     handle();
@@ -30,7 +42,7 @@ export default function AuthCallbackPage() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-4"
-      style={{ background: 'var(--background-gradient)' }}
+      style={{ background: 'var(--background)' }}
     >
       <div className="text-center max-w-sm">
         {!isError ? (

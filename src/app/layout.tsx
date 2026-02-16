@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Asualy — Find your community abroad",
-  description: "Location-based community for newcomers. Find guides, housing, and local services.",
+  title: "Mapleins — Find your community in Canada",
+  description: "Mapleins is a location-based community for Indian newcomers to Canada. Find guides, housing, and local services.",
 };
 
 export default function RootLayout({

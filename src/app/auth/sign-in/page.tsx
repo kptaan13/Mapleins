@@ -36,7 +36,7 @@ export default function SignInPage() {
       return;
     }
 
-    router.push('/');
+    router.push('/app');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,36 +80,36 @@ export default function SignInPage() {
     await handlePostAuthRedirect();
   };
 
-  const title = mode === 'signin' ? 'Sign in to Asualy' : 'Create your Asualy account';
+  const title = mode === 'signin' ? 'Sign in to Mapleins' : 'Create your Mapleins account';
   const buttonLabel = mode === 'signin' ? 'Sign in' : 'Sign up';
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ background: 'var(--background-gradient)' }}
+      className="min-h-screen flex items-center justify-center px-4 py-12 sm:py-16"
+      style={{ background: 'var(--background)' }}
     >
-      <div className="w-full max-w-md">
-        <Link href="/" className="block text-center mb-8">
-          <span className="text-2xl font-bold tracking-tight text-[var(--foreground)]">
-            Asualy
+      <div className="w-full max-w-[400px]">
+        <Link href="/" className="block text-center mb-10">
+          <span className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+            Mapleins
           </span>
-          <p className="mt-1.5 text-sm text-[var(--muted)]">
+          <p className="mt-2 text-sm text-[var(--muted)]">
             Find your community abroad
           </p>
         </Link>
 
-        <div className="asualy-card p-8 shadow-xl">
+        <div className="mapleins-card p-6 sm:p-8 shadow-elevated rounded-2xl">
           <div className="mb-6 text-center">
             <div
-              className="inline-flex h-12 w-12 items-center justify-center rounded-xl font-bold text-lg text-white mb-4"
+              className="inline-flex h-14 w-14 items-center justify-center rounded-2xl font-semibold text-xl text-white mb-5 shadow-card"
               style={{ background: 'var(--accent)' }}
             >
-              A
+              M
             </div>
-            <h1 className="text-xl font-semibold text-[var(--foreground)] tracking-tight">
+            <h1 className="text-lg font-semibold text-[var(--foreground)] tracking-tight">
               {title}
             </h1>
-            <p className="mt-1.5 text-sm text-[var(--muted)]">
+            <p className="mt-2 text-sm text-[var(--muted)] leading-relaxed">
               Your guide and community when you move to a new city.
             </p>
           </div>
@@ -149,7 +149,7 @@ export default function SignInPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="asualy-input w-full rounded-lg px-4 py-3 text-sm placeholder:text-[var(--muted)]"
+                className="mapleins-input w-full rounded-xl px-4 py-3 text-sm placeholder:text-[var(--muted)]"
                 placeholder="you@example.com"
               />
             </div>
@@ -163,7 +163,7 @@ export default function SignInPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="asualy-input w-full rounded-lg px-4 py-3 text-sm placeholder:text-[var(--muted)]"
+                className="mapleins-input w-full rounded-xl px-4 py-3 text-sm placeholder:text-[var(--muted)]"
                 placeholder="At least 6 characters"
               />
               <p className="mt-1.5 text-xs text-[var(--muted)]">
@@ -189,7 +189,7 @@ export default function SignInPage() {
             <button
               type="submit"
               disabled={status === 'loading'}
-              className="asualy-btn-primary w-full rounded-lg py-3 text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="mapleins-btn-primary w-full rounded-xl py-3 text-sm font-medium disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {status === 'loading' ? (
                 <>
@@ -206,16 +206,17 @@ export default function SignInPage() {
           </form>
 
           <p className="mt-6 text-center text-xs text-[var(--muted)]">
-            By continuing, you agree to Asualy&apos;s terms.
+            By continuing, you agree to Mapleins&apos;s terms.
           </p>
         </div>
 
         <p className="mt-8 text-center">
           <Link
             href="/"
-            className="text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
           >
-            ← Back to home
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            Back to home
           </Link>
         </p>
       </div>
