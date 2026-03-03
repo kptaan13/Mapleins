@@ -7,7 +7,15 @@ import { writeFile, unlink, mkdtemp, rmdir } from "fs/promises";
 import { promisify } from "util";
 import { join } from "path";
 import { tmpdir } from "os";
-import pdf from "pdf-parse";
+import * as pdfParseModule from "pdf-parse";
+
+type PdfParseFn = (buffer: Buffer) => Promise<{ text?: string }>;
+const getPdf = (): PdfParseFn => {
+  const m = pdfParseModule as { default?: PdfParseFn; pdf?: PdfParseFn };
+  const fn = m.default ?? m.pdf;
+  if (typeof fn !== "function") throw new Error("pdf-parse: no pdf function");
+  return fn;
+};
 
 const execFileAsync = promisify(execFile);
 
@@ -44,6 +52,7 @@ export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   } catch (err) {
     console.warn("[pdfExtract] pdftotext failed, trying pdf-parse fallback:", (err as Error).message ?? err);
     try {
+      const pdf = getPdf();
       const result = await pdf(buffer);
       return result?.text?.trim() ?? "";
     } catch (fallbackErr) {

@@ -6,9 +6,18 @@
 export const runtime = "nodejs";
 
 import { NextRequest } from "next/server";
-import pdf from "pdf-parse";
+import * as pdfParseModule from "pdf-parse";
+
+type PdfParseFn = (buffer: Buffer) => Promise<{ text?: string }>;
+const getPdf = (): PdfParseFn => {
+  const m = pdfParseModule as { default?: PdfParseFn; pdf?: PdfParseFn };
+  const fn = m.default ?? m.pdf;
+  if (typeof fn !== "function") throw new Error("pdf-parse: no pdf function");
+  return fn;
+};
 
 async function extractTextFromBuffer(buffer: Buffer): Promise<string> {
+  const pdf = getPdf();
   const result = await pdf(buffer);
   return result?.text ?? "";
 }
