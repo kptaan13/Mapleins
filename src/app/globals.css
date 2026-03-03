@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Geist fonts – loaded via CSS instead of next/font to avoid SWC dependency */
+@font-face {
+  font-family: "GeistSans";
+  src: url("./fonts/GeistVF.woff") format("woff");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "GeistMono";
+  src: url("./fonts/GeistMonoVF.woff") format("woff");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+
+
+@layer base {
+  :root {
+    --background: 142 40% 99%;
+    --foreground: 142 76% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 142 76% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 142 76% 12%;
+    --primary: 142 64% 24%;
+    /* Refined Deep Green #166534 approx */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 142 30% 96%;
+    --secondary-foreground: 142 76% 12%;
+    --muted: 142 20% 96%;
+    --muted-foreground: 142 10% 45%;
+    --accent: 142 30% 92%;
+    --accent-foreground: 142 76% 12%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 142 20% 90%;
+    --input: 142 20% 90%;
+    --ring: 142 64% 24%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .glass-morphism {
+    @apply bg-white/95 backdrop-blur-xl border-b border-gray-100 shadow-sm;
+  }
+
+  .glass-card {
+    @apply bg-white/40 backdrop-blur-lg border border-white/30 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300;
+  }
+
+  .green-gradient {
+    background: linear-gradient(135deg, #166534 0%, #22c55e 100%);
+  }
+
+  .soft-glow {
+    box-shadow: 0 0 20px rgba(22, 101, 52, 0.15);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#166534] to-[#22c55e];
+  }
+
+  /* Premium Animations */
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  @keyframes revealUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .reveal-up {
+    animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .stagger-1 {
+    animation-delay: 0.1s;
+  }
+
+  .stagger-2 {
+    animation-delay: 0.2s;
+  }
+
+  .stagger-3 {
+    animation-delay: 0.3s;
+  }
+
+  .stagger-4 {
+    animation-delay: 0.4s;
+  }
+
+  .shimmer-bg {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite linear;
+  }
+}
