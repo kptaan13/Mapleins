@@ -282,6 +282,22 @@ function EditorContent() {
       return { ...r, [field]: arr };
     });
 
+  const addRole = () =>
+    setResume((r) => {
+      const roles = [...(r.experienceByRole ?? [])];
+      roles.push({ role: "", company: "", dates: "", bullets: [""] });
+      return { ...r, experienceByRole: roles };
+    });
+
+  const addRoleBullet = (roleIdx: number) =>
+    setResume((r) => {
+      const roles = [...(r.experienceByRole ?? [])];
+      const current = roles[roleIdx] ?? { role: "", company: "", dates: "", bullets: [] };
+      const bullets = [...(current.bullets ?? []), ""];
+      roles[roleIdx] = { ...current, bullets };
+      return { ...r, experienceByRole: roles };
+    });
+
   const _saveResume = () => {
     setSaveStatus("saving");
     try {
