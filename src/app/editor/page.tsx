@@ -282,6 +282,13 @@ function EditorContent() {
       return { ...r, [field]: arr };
     });
 
+  const addListItem = (field: "skills" | "education") =>
+    setResume((r) => {
+      const arr = [...(r[field] as string[])];
+      arr.push("");
+      return { ...r, [field]: arr };
+    });
+
   const addRole = () =>
     setResume((r) => {
       const roles = [...(r.experienceByRole ?? [])];
