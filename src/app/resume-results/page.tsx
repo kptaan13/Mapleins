@@ -183,7 +183,7 @@ function ResumeResultsContent() {
     const stored = sessionStorage.getItem("mapleinsResumeAnalysis");
     if (!stored || !jobType) return;
     try {
-      const data = JSON.parse(stored) as any;
+      const data = JSON.parse(stored) as Partial<SimpleResume>;
 
       // Skill gaps
       const profile = getCompetencyProfile(jobType);

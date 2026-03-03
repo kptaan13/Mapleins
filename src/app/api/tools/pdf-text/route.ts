@@ -3,25 +3,14 @@
  * POST multipart/form-data with field "file" (PDF).
  * Response: { text: string } or { error: string }
  */
-import { NextRequest } from "next/server";
-
-// pdf-parse uses Node/PDF.js; must run in Node runtime
 export const runtime = "nodejs";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { PDFParse } = require("pdf-parse");
+import { NextRequest } from "next/server";
+import pdf from "pdf-parse";
 
 async function extractTextFromBuffer(buffer: Buffer): Promise<string> {
-  const parser = new PDFParse({ data: buffer });
-  try {
-    const result = await parser.getText();
-    return result?.text ?? "";
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    throw new Error(`PDF parse failed: ${msg}`);
-  } finally {
-    await parser.destroy();
-  }
+  const result = await pdf(buffer);
+  return result?.text ?? "";
 }
 
 export async function POST(request: NextRequest) {

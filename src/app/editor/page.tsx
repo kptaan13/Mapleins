@@ -282,7 +282,7 @@ function EditorContent() {
       return { ...r, [field]: arr };
     });
 
-  const saveResume = () => {
+  const _saveResume = () => {
     setSaveStatus("saving");
     try {
       const existingRaw = sessionStorage.getItem("mapleinsResumeAnalysis");
@@ -312,7 +312,7 @@ function EditorContent() {
       });
       if (!res.ok) throw new Error();
       const data = await res.json();
-      const next = { ...resume, ...data, experience: data.experienceByRole?.flatMap((e: any) => e.bullets) || resume.experience };
+      const next = { ...resume, ...data, experience: data.experienceByRole?.flatMap((e: ExperienceEntry) => e.bullets ?? []) ?? resume.experience };
       setResume(next);
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);

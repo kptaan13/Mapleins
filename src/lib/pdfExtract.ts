@@ -7,6 +7,7 @@ import { writeFile, unlink, mkdtemp, rmdir } from "fs/promises";
 import { promisify } from "util";
 import { join } from "path";
 import { tmpdir } from "os";
+import pdf from "pdf-parse";
 
 const execFileAsync = promisify(execFile);
 
@@ -43,10 +44,7 @@ export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   } catch (err) {
     console.warn("[pdfExtract] pdftotext failed, trying pdf-parse fallback:", (err as Error).message ?? err);
     try {
-      const { PDFParse } = require("pdf-parse");
-      const parser = new PDFParse({ data: buffer });
-      const result = await parser.getText();
-      await parser.destroy();
+      const result = await pdf(buffer);
       return result?.text?.trim() ?? "";
     } catch (fallbackErr) {
       console.error("[pdfExtract] pdf-parse fallback failed:", (fallbackErr as Error).message ?? fallbackErr);
