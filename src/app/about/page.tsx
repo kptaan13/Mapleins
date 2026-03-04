@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { WAITLIST_ONLY } from "@/lib/constants";
 
 export default function AboutPage() {
   return (
@@ -15,12 +16,14 @@ export default function AboutPage() {
             <Link href="/blog"    className="px-3 py-2 rounded-md text-gray-700 hover:text-[#166534] hover:bg-green-50 transition-colors">Blog</Link>
             <Link href="/contact" className="px-3 py-2 rounded-md text-gray-700 hover:text-[#166534] hover:bg-green-50 transition-colors">Contact</Link>
           </nav>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-[#166534] px-3 py-2 rounded-md hover:bg-green-50 transition-colors hidden md:inline">Sign in</Link>
-            <Link href="/signup">
-              <Button className="bg-[#166534] hover:bg-[#15803d] text-white">Get Started →</Button>
-            </Link>
-          </div>
+          {!WAITLIST_ONLY && (
+            <div className="flex items-center gap-3">
+              <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-[#166534] px-3 py-2 rounded-md hover:bg-green-50 transition-colors hidden md:inline">Sign in</Link>
+              <Link href="/signup">
+                <Button className="bg-[#166534] hover:bg-[#15803d] text-white">Get Started →</Button>
+              </Link>
+            </div>
+          )}
         </div>
       </header>
 
@@ -57,9 +60,9 @@ export default function AboutPage() {
         </p>
 
         <div className="pt-4 flex flex-col sm:flex-row gap-3">
-          <Link href="/signup">
+          <Link href={WAITLIST_ONLY ? "/waitlist" : "/signup"}>
             <Button className="bg-[#22c55e] hover:bg-[#16a34a] text-white font-semibold px-6 py-5 h-auto">
-              Try Mapleins Free →
+              {WAITLIST_ONLY ? "Join the Waitlist →" : "Try Mapleins Free →"}
             </Button>
           </Link>
           <Link href="/contact">
