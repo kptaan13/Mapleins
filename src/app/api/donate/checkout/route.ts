@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
     );
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
-    const successUrl = `${baseUrl}/resume-results?donated=true`;
-    const cancelUrl = `${baseUrl}/resume-results`;
+    const successUrl = `${baseUrl}/donate?status=success`;
+    const cancelUrl = `${baseUrl}/donate?status=cancelled`;
 
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
