@@ -13,10 +13,6 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      return Response.json({ error: "Please sign in to donate." }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const amountParam = searchParams.get("amount");
     const amountCents = Math.min(
@@ -49,7 +45,7 @@ export async function GET(request: NextRequest) {
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: {
-        userId: String(user.id),
+        ...(user ? { userId: String(user.id) } : {}),
         type: "donation",
       },
     });
