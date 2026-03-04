@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { WAITLIST_ONLY } from "@/lib/constants";
 
 export default function WaitlistPage() {
   const [name, setName] = useState("");
@@ -50,10 +51,12 @@ export default function WaitlistPage() {
             <div className="w-8 h-8 green-gradient rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md transition-transform group-hover:scale-110">M</div>
             <span className="text-xl font-bold text-gray-900 tracking-tight">Mapleins</span>
           </Link>
-          <div className="flex items-center gap-6">
-            <Link href="/login" className="text-sm font-bold text-gray-500 hover:text-[#166534] transition-colors">Sign in</Link>
-            <Link href="/signup" className="text-sm font-bold text-[#166534] hover:underline transition-colors px-4 py-2 bg-green-50 rounded-xl">Get started</Link>
-          </div>
+          {!WAITLIST_ONLY && (
+            <div className="flex items-center gap-6">
+              <Link href="/login" className="text-sm font-bold text-gray-500 hover:text-[#166534] transition-colors">Sign in</Link>
+              <Link href="/signup" className="text-sm font-bold text-[#166534] hover:underline transition-colors px-4 py-2 bg-green-50 rounded-xl">Get started</Link>
+            </div>
+          )}
         </div>
       </header>
 

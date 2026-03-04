@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { STRIPE_DONATION_LINK } from "@/lib/constants";
+import { STRIPE_DONATION_LINK, WAITLIST_ONLY } from "@/lib/constants";
 
 const AMOUNTS = [5, 10, 20, 50];
 
@@ -48,12 +48,14 @@ export default function DonatePage() {
             <Link href="/blog"    className="px-3 py-2 rounded-md text-gray-700 hover:text-[#166534] hover:bg-green-50 transition-colors">Blog</Link>
             <Link href="/contact" className="px-3 py-2 rounded-md text-gray-700 hover:text-[#166534] hover:bg-green-50 transition-colors">Contact</Link>
           </nav>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-[#166534] px-3 py-2 rounded-md hover:bg-green-50 transition-colors hidden md:inline">Sign in</Link>
-            <Link href="/signup">
-              <Button className="bg-[#166534] hover:bg-[#15803d] text-white">Get Started →</Button>
-            </Link>
-          </div>
+          {!WAITLIST_ONLY && (
+            <div className="flex items-center gap-3">
+              <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-[#166534] px-3 py-2 rounded-md hover:bg-green-50 transition-colors hidden md:inline">Sign in</Link>
+              <Link href="/signup">
+                <Button className="bg-[#166534] hover:bg-[#15803d] text-white">Get Started →</Button>
+              </Link>
+            </div>
+          )}
         </div>
       </header>
 
