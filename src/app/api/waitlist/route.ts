@@ -10,8 +10,13 @@ export async function POST(request: NextRequest) {
       city?: string;
     };
 
-    if (!email || !email.trim()) {
-      return new Response(JSON.stringify({ error: "Email is required." }), {
+    const trimmedEmail = email?.trim();
+    const trimmedName = name?.trim();
+    const trimmedJobType = jobType?.trim();
+    const trimmedCity = city?.trim();
+
+    if (!trimmedEmail || !trimmedName || !trimmedJobType || !trimmedCity) {
+      return new Response(JSON.stringify({ error: "All fields are required." }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -31,10 +36,10 @@ export async function POST(request: NextRequest) {
     const supabase = createClient(supabaseUrl, serviceKey);
 
     await supabase.from("waitlist").insert({
-      email: email.trim(),
-      name: name?.trim() || null,
-      job_type: jobType?.trim() || null,
-      city: city?.trim() || null,
+      email: trimmedEmail,
+      name: trimmedName,
+      job_type: trimmedJobType,
+      city: trimmedCity,
       source: "website",
     });
 

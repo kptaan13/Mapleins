@@ -15,8 +15,13 @@ export default function WaitlistPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) {
-      setError("Email is required.");
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedJobType = jobType.trim();
+    const trimmedCity = city.trim();
+
+    if (!trimmedName || !trimmedEmail || !trimmedJobType || !trimmedCity) {
+      setError("All fields are required.");
       return;
     }
     setStatus("submitting");
@@ -25,7 +30,12 @@ export default function WaitlistPage() {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, jobType, city }),
+        body: JSON.stringify({
+          name: trimmedName,
+          email: trimmedEmail,
+          jobType: trimmedJobType,
+          city: trimmedCity,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.error) {
@@ -80,7 +90,7 @@ export default function WaitlistPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-[#166534] opacity-70 ml-1" htmlFor="name">
-                    Full Name
+                    Full Name *
                   </label>
                   <input
                     id="name"
@@ -88,6 +98,7 @@ export default function WaitlistPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="E.g. Ali Khan"
+                    required
                     className="w-full bg-white/50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#166534] transition-all outline-none font-medium text-gray-700"
                   />
                 </div>
@@ -110,7 +121,7 @@ export default function WaitlistPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-[#166534] opacity-70 ml-1" htmlFor="jobType">
-                    Target Role
+                    Target Role *
                   </label>
                   <input
                     id="jobType"
@@ -118,12 +129,13 @@ export default function WaitlistPage() {
                     value={jobType}
                     onChange={(e) => setJobType(e.target.value)}
                     placeholder="e.g. Data Analyst"
+                    required
                     className="w-full bg-white/50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#166534] transition-all outline-none font-medium text-gray-700"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-[#166534] opacity-70 ml-1" htmlFor="city">
-                    Preferred City
+                    Preferred City *
                   </label>
                   <input
                     id="city"
@@ -131,6 +143,7 @@ export default function WaitlistPage() {
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder="e.g. Toronto, ON"
+                    required
                     className="w-full bg-white/50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#166534] transition-all outline-none font-medium text-gray-700"
                   />
                 </div>
