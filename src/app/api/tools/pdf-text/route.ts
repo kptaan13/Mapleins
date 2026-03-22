@@ -8,18 +8,34 @@ export const runtime = "nodejs";
 import { NextRequest } from "next/server";
 import * as pdfParseModule from "pdf-parse";
 
-type PdfParseFn = (buffer: Buffer) => Promise<{ text?: string }>;
-const getPdf = (): PdfParseFn => {
-  const m = pdfParseModule as { default?: PdfParseFn; pdf?: PdfParseFn };
-  const fn = m.default ?? m.pdf;
-  if (typeof fn !== "function") throw new Error("pdf-parse: no pdf function");
-  return fn;
-};
+type PdfParseLegacyFn = (buffer: Buffer) => Promise<{ text?: string }>;
+type PdfParseClassInstance = { getText: () => Promise<{ text?: string }>; destroy: () => Promise<void> };
+type PdfParseClassCtor = new (opts: { data: Buffer }) => PdfParseClassInstance;
 
 async function extractTextFromBuffer(buffer: Buffer): Promise<string> {
-  const pdf = getPdf();
-  const result = await pdf(buffer);
-  return result?.text ?? "";
+  const m = pdfParseModule as {
+    PDFParse?: PdfParseClassCtor;
+    default?: PdfParseLegacyFn;
+    pdf?: PdfParseLegacyFn;
+  };
+
+  if (typeof m.PDFParse === "function") {
+    const parser = new m.PDFParse({ data: buffer });
+    try {
+      const result = await parser.getText();
+      return result?.text ?? "";
+    } finally {
+      await parser.destroy();
+    }
+  }
+
+  const legacyFn = m.default ?? m.pdf;
+  if (typeof legacyFn === "function") {
+    const result = await legacyFn(buffer);
+    return result?.text ?? "";
+  }
+
+  throw new Error("pdf-parse API not available");
 }
 
 export async function POST(request: NextRequest) {

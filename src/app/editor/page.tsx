@@ -194,8 +194,10 @@ function EditorContent() {
   const [hints, setHints] = useState<Record<string, HintState>>({});
   const [ats, setAts] = useState<ATSBreakdown>({ contactInfo: 0, summary: 0, actionVerbs: 0, quantification: 0, keywords: 0, length: 0, total: 0 });
   const [downloading, setDownloading] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState("federal");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [showEditorPaywall, setShowEditorPaywall] = useState(false);
   const hintTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
@@ -343,18 +345,34 @@ function EditorContent() {
     finally { setAiGenerating(false); }
   };
 
-  const downloadPdf = async () => {
+  const FREE_DOWNLOAD_KEY = "mapleins_free_downloads";
+  const FREE_DOWNLOAD_LIMIT = 3;
+  const getFreeDownloadCount = () => { try { return parseInt(localStorage.getItem(FREE_DOWNLOAD_KEY) || "0", 10); } catch { return 0; } };
+  const incrementFreeDownloadCount = () => { try { localStorage.setItem(FREE_DOWNLOAD_KEY, String(getFreeDownloadCount() + 1)); } catch { /* ignore */ } };
+
+  const downloadPdf = async (skipPaywallCheck = false) => {
+    if (!skipPaywallCheck && getFreeDownloadCount() >= FREE_DOWNLOAD_LIMIT) {
+      setShowEditorPaywall(true);
+      return;
+    }
+    setShowEditorPaywall(false);
     setDownloading(true);
+    const DOWNLOAD_TIMEOUT_MS = 45000;
     try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
       const res = await fetch("/api/resume/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobType, city, skipRefinement: true, parsedData: resume }),
+        signal: controller.signal,
+        body: JSON.stringify({ jobType, city, skipRefinement: true, theme: selectedTheme, parsedData: resume }),
       });
+      clearTimeout(timer);
       if (!res.ok) throw new Error();
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url; a.download = "Mapleins-Optimized.pdf"; a.click();
+      incrementFreeDownloadCount();
     } catch { /* ignore */ }
     finally { setDownloading(false); }
   };
@@ -393,9 +411,116 @@ function EditorContent() {
             >
               {aiGenerating ? "Generating..." : "AI Improve Content"}
             </Button>
+            <div className="hidden sm:flex items-center gap-1.5 border border-gray-100 rounded-xl px-2 py-1.5" title="Pick resume template">
+              {([
+                {
+                  id: "federal", label: "Federal / Gov't",
+                  preview: (
+                    <svg viewBox="0 0 60 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="60" height="78" fill="white"/>
+                      <rect x="4" y="5" width="30" height="2.5" rx="0.5" fill="#1d4ed8"/>
+                      <rect x="4" y="10" width="20" height="1.5" rx="0.5" fill="#6b7280"/>
+                      <rect x="4" y="14" width="52" height="0.5" fill="#e5e7eb"/>
+                      <rect x="4" y="18" width="22" height="2" rx="0.5" fill="#1d4ed8"/>
+                      <rect x="4" y="21" width="52" height="0.5" fill="#1d4ed8"/>
+                      <rect x="4" y="24" width="50" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="4" y="27" width="46" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="4" y="30" width="52" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="4" y="35" width="26" height="2" rx="0.5" fill="#1d4ed8"/>
+                      <rect x="4" y="38" width="52" height="0.5" fill="#1d4ed8"/>
+                      <rect x="4" y="41" width="20" height="1.5" rx="0.5" fill="#374151"/>
+                      <rect x="4" y="44" width="50" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="4" y="47" width="44" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="4" y="50" width="52" height="1.5" rx="0.5" fill="#9ca3af"/>
+                    </svg>
+                  ),
+                },
+                {
+                  id: "bay-street", label: "Bay Street",
+                  preview: (
+                    <svg viewBox="0 0 60 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="60" height="78" fill="white"/>
+                      <rect width="20" height="78" fill="#0f2342"/>
+                      <rect x="2" y="5" width="14" height="2.5" rx="0.5" fill="white"/>
+                      <rect x="2" y="10" width="12" height="1.5" rx="0.5" fill="#93c5fd"/>
+                      <rect x="2" y="16" width="8" height="1.5" rx="0.5" fill="#93c5fd"/>
+                      <rect x="2" y="19" width="14" height="1.5" rx="0.5" fill="#e2e8f0"/>
+                      <rect x="2" y="22" width="12" height="1.5" rx="0.5" fill="#e2e8f0"/>
+                      <rect x="2" y="28" width="8" height="1.5" rx="0.5" fill="#93c5fd"/>
+                      <rect x="2" y="31" width="14" height="1.5" rx="0.5" fill="#e2e8f0"/>
+                      <rect x="2" y="34" width="10" height="1.5" rx="0.5" fill="#e2e8f0"/>
+                      <rect x="24" y="5" width="24" height="2" rx="0.5" fill="#1e3a5f"/>
+                      <rect x="24" y="8" width="32" height="0.5" fill="#1e3a5f"/>
+                      <rect x="24" y="11" width="32" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="24" y="14" width="28" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="24" y="22" width="28" height="2" rx="0.5" fill="#1e3a5f"/>
+                      <rect x="24" y="25" width="32" height="0.5" fill="#1e3a5f"/>
+                      <rect x="24" y="28" width="20" height="1.5" rx="0.5" fill="#374151"/>
+                      <rect x="24" y="31" width="32" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="24" y="34" width="28" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="24" y="37" width="32" height="1.5" rx="0.5" fill="#9ca3af"/>
+                    </svg>
+                  ),
+                },
+                {
+                  id: "vancouver", label: "Vancouver",
+                  preview: (
+                    <svg viewBox="0 0 60 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="60" height="78" fill="white"/>
+                      <rect x="4" y="5" width="30" height="2.5" rx="0.5" fill="#0f172a"/>
+                      <rect x="4" y="9" width="22" height="1.5" rx="0.5" fill="#0891b2"/>
+                      <rect x="4" y="13" width="52" height="0.5" fill="#e5e7eb"/>
+                      <rect x="4" y="18" width="2.5" height="8" rx="1" fill="#0891b2"/>
+                      <rect x="9" y="19" width="18" height="2" rx="0.5" fill="#0f172a"/>
+                      <rect x="9" y="23" width="44" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="9" y="26" width="40" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="4" y="32" width="2.5" height="18" rx="1" fill="#0891b2"/>
+                      <rect x="9" y="33" width="22" height="2" rx="0.5" fill="#0f172a"/>
+                      <rect x="9" y="37" width="18" height="1.5" rx="0.5" fill="#0891b2"/>
+                      <rect x="9" y="40" width="44" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="9" y="43" width="40" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="9" y="46" width="44" height="1.5" rx="0.5" fill="#9ca3af"/>
+                    </svg>
+                  ),
+                },
+                {
+                  id: "newcomer", label: "Newcomer",
+                  preview: (
+                    <svg viewBox="0 0 60 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="60" height="78" fill="white"/>
+                      <rect width="60" height="22" fill="#166534"/>
+                      <rect x="4" y="5" width="28" height="3" rx="0.5" fill="white"/>
+                      <rect x="4" y="11" width="18" height="1.5" rx="0.5" fill="#bbf7d0"/>
+                      <rect x="4" y="15" width="36" height="1.5" rx="0.5" fill="#d1fae5"/>
+                      <rect x="0" y="25" width="60" height="7" fill="#f0fdf4"/>
+                      <rect x="0" y="25" width="3" height="7" fill="#166534"/>
+                      <rect x="6" y="27" width="22" height="2" rx="0.5" fill="#166534"/>
+                      <rect x="4" y="35" width="50" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="4" y="38" width="46" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="0" y="43" width="60" height="7" fill="#f0fdf4"/>
+                      <rect x="0" y="43" width="3" height="7" fill="#166534"/>
+                      <rect x="6" y="45" width="28" height="2" rx="0.5" fill="#166534"/>
+                      <rect x="4" y="53" width="50" height="1.5" rx="0.5" fill="#9ca3af"/>
+                      <rect x="4" y="56" width="44" height="1.5" rx="0.5" fill="#9ca3af"/>
+                    </svg>
+                  ),
+                },
+              ] as const).map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setSelectedTheme(t.id)}
+                  title={t.label}
+                  className={`rounded-lg overflow-hidden border-2 transition-all hover:scale-105 hover:shadow-sm ${selectedTheme === t.id ? "border-[#166534] shadow-md" : "border-gray-200 opacity-70 hover:opacity-100"}`}
+                  style={{ width: 30, height: 39 }}
+                >
+                  {t.preview}
+                </button>
+              ))}
+            </div>
             <Button
               size="sm"
-              onClick={downloadPdf}
+              onClick={() => downloadPdf()}
               disabled={downloading}
               className="h-10 px-6 green-gradient text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all"
             >
@@ -630,6 +755,34 @@ function EditorContent() {
           </aside>
         </div>
       </main>
+
+      {/* ── Paywall Modal ── */}
+      {showEditorPaywall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="text-5xl mb-4">🍁</div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2">You&apos;ve used {FREE_DOWNLOAD_LIMIT} free resumes!</h2>
+            <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+              Mapleins is free for newcomers. If it&apos;s helped your job search, consider supporting us so we can keep building.
+            </p>
+            <div className="space-y-3">
+              <Link
+                href="/donate"
+                className="block w-full green-gradient text-white py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all text-center"
+              >
+                ❤️ Support Mapleins
+              </Link>
+              <button
+                type="button"
+                onClick={() => downloadPdf(true)}
+                className="w-full py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-colors text-sm"
+              >
+                Continue for free
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -9,13 +9,37 @@ import { join } from "path";
 import { tmpdir } from "os";
 import * as pdfParseModule from "pdf-parse";
 
-type PdfParseFn = (buffer: Buffer) => Promise<{ text?: string }>;
-const getPdf = (): PdfParseFn => {
-  const m = pdfParseModule as { default?: PdfParseFn; pdf?: PdfParseFn };
-  const fn = m.default ?? m.pdf;
-  if (typeof fn !== "function") throw new Error("pdf-parse: no pdf function");
-  return fn;
-};
+type PdfParseLegacyFn = (buffer: Buffer) => Promise<{ text?: string }>;
+type PdfParseClassInstance = { getText: () => Promise<{ text?: string }>; destroy: () => Promise<void> };
+type PdfParseClassCtor = new (opts: { data: Buffer }) => PdfParseClassInstance;
+
+async function parseWithPdfParse(buffer: Buffer): Promise<string> {
+  const m = pdfParseModule as {
+    PDFParse?: PdfParseClassCtor;
+    default?: PdfParseLegacyFn;
+    pdf?: PdfParseLegacyFn;
+  };
+
+  // pdf-parse v2+ class API
+  if (typeof m.PDFParse === "function") {
+    const parser = new m.PDFParse({ data: buffer });
+    try {
+      const result = await parser.getText();
+      return result?.text?.trim() ?? "";
+    } finally {
+      await parser.destroy();
+    }
+  }
+
+  // Backward compatibility for function API
+  const legacyFn = m.default ?? m.pdf;
+  if (typeof legacyFn === "function") {
+    const result = await legacyFn(buffer);
+    return result?.text?.trim() ?? "";
+  }
+
+  throw new Error("pdf-parse API not available");
+}
 
 const execFileAsync = promisify(execFile);
 
@@ -52,9 +76,7 @@ export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   } catch (err) {
     console.warn("[pdfExtract] pdftotext failed, trying pdf-parse fallback:", (err as Error).message ?? err);
     try {
-      const pdf = getPdf();
-      const result = await pdf(buffer);
-      return result?.text?.trim() ?? "";
+      return await parseWithPdfParse(buffer);
     } catch (fallbackErr) {
       console.error("[pdfExtract] pdf-parse fallback failed:", (fallbackErr as Error).message ?? fallbackErr);
       return "";

@@ -89,15 +89,19 @@ export async function POST(request: NextRequest) {
       const formData = await request.formData();
       const file = formData.get("file") as File | null;
       resumeUrl = (formData.get("resumeUrl") as string) || null;
+      const hasFile = !!file && file.size > 0;
       if (file && file.size > MAX_FILE_SIZE_BYTES) {
         return Response.json(
           { error: "Resume file must be 10MB or smaller." },
           { status: 400 }
         );
       }
+      if (!hasFile && !resumeUrl) {
+        return Response.json({ error: "Please upload a PDF resume." }, { status: 400 });
+      }
       // Use only the uploaded file for parsing when present — do not fall back to resumeUrl,
       // so we never read a different/cached PDF by mistake.
-      if (file && file.size > 0) {
+      if (hasFile && file) {
         const buffer = Buffer.from(await file.arrayBuffer());
         rawText = await parsePDFBuffer(buffer);
       }
@@ -108,6 +112,13 @@ export async function POST(request: NextRequest) {
         return Response.json({ error: "resumeUrl or file required" }, { status: 400 });
       }
       rawText = await fetchAndParsePDF(resumeUrl);
+    }
+
+    if (!rawText.trim()) {
+      return Response.json(
+        { error: "Could not read text from this PDF. Please upload a clear text-based PDF (not a scanned image)." },
+        { status: 422 }
+      );
     }
 
     const extracted = rawText ? extractFromText(rawText) : {};
@@ -178,9 +189,7 @@ Include every role in experienceByRole with its own bullets. Do not shorten or o
 Extract certifications if present (e.g. WHMIS, Forklift, ServeIt Right). Include Key Coursework under education when present.
 For yearsOfExperience: calculate the total professional work experience in years by summing the durations of all roles.`;
 
-    const userPromptMessage = rawText?.trim()
-      ? `Extract from this resume (use REAL name, contact, roles, skills, certifications):\n\n${rawText.slice(0, 12000)}`
-      : "No text extracted. Return generic analysis for a junior candidate.";
+    const userPromptMessage = `Extract from this resume (use REAL name, contact, roles, skills, certifications):\n\n${rawText.slice(0, 12000)}`;
 
     let aiContent: string | undefined = undefined;
 
