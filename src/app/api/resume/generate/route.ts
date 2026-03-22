@@ -135,9 +135,9 @@ const THEMES: Record<ThemeName, ThemeConfig> = {
 function getThemeStyles(t: ThemeConfig) {
   return StyleSheet.create({
     page: {
-      paddingTop: 32,
-      paddingBottom: 36,
-      paddingHorizontal: 44,
+      paddingTop: 42,
+      paddingBottom: 52,
+      paddingHorizontal: 50,
       fontFamily: "Helvetica",
       backgroundColor: t.background,
     },
@@ -145,7 +145,7 @@ function getThemeStyles(t: ThemeConfig) {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "flex-start",
-      marginBottom: 2,
+      marginBottom: 5,
     },
     name: {
       fontSize: 22,
@@ -158,21 +158,21 @@ function getThemeStyles(t: ThemeConfig) {
       color: t.accent,
       fontFamily: "Helvetica-Bold",
       letterSpacing: 0.1,
-      marginBottom: 3,
+      marginBottom: 5,
     },
     contactRow: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: 10,
-      marginBottom: 2,
+      gap: 12,
+      marginBottom: 8,
     },
     contactText: { fontSize: 9, color: t.light },
     divider: {
-      marginVertical: 6,
+      marginVertical: 10,
       height: 1,
       backgroundColor: "#e5e7eb",
     },
-    section: { marginBottom: 8 },
+    section: { marginBottom: 14 },
     // "plain" style: coloured uppercase text (classic / navy)
     sectionTitle: {
       fontSize: 9,
@@ -180,19 +180,19 @@ function getThemeStyles(t: ThemeConfig) {
       color: t.sectionStyle === "plain" ? t.accent : t.dark,
       letterSpacing: 1.2,
       textTransform: "uppercase",
-      marginBottom: t.sectionStyle === "line" ? 2 : 4,
+      marginBottom: t.sectionStyle === "line" ? 3 : 6,
     },
     // "line" style underline (minimal)
     sectionUnderline: {
       height: 1,
       backgroundColor: t.accent,
-      marginBottom: 4,
+      marginBottom: 6,
     },
     // "bar" style left accent bar (executive)
     sectionBarRow: {
       flexDirection: "row",
       alignItems: "center",
-      marginBottom: 4,
+      marginBottom: 6,
     },
     sectionBar: {
       width: 3,
@@ -201,12 +201,12 @@ function getThemeStyles(t: ThemeConfig) {
       marginRight: 6,
       borderRadius: 1,
     },
-    bodyText: { fontSize: 9.5, color: t.mid, lineHeight: 1.4 },
+    bodyText: { fontSize: 9.5, color: t.mid, lineHeight: 1.5 },
     roleHeaderRow: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "flex-start",
-      marginBottom: 1,
+      marginBottom: 2,
     },
     roleTitle: {
       fontSize: 10,
@@ -221,35 +221,35 @@ function getThemeStyles(t: ThemeConfig) {
     roleCompany: {
       fontSize: 9.5,
       color: t.accent,
-      marginBottom: 3,
+      marginBottom: 5,
     },
-    roleEntry: { marginBottom: 8 },
-    bulletRow: { flexDirection: "row", marginBottom: 3 },
+    roleEntry: { marginBottom: 12 },
+    bulletRow: { flexDirection: "row", marginBottom: 4 },
     bulletDot: { fontSize: 9.5, color: t.accent, width: 12 },
-    bulletText: { fontSize: 9.5, color: t.mid, flex: 1, lineHeight: 1.35 },
+    bulletText: { fontSize: 9.5, color: t.mid, flex: 1, lineHeight: 1.45 },
     skillsCategoryLabel: {
       fontSize: 8.5,
       fontFamily: "Helvetica-Bold",
       color: t.dark,
-      marginBottom: 2,
-      marginTop: 3,
+      marginBottom: 4,
+      marginTop: 6,
     },
-    skillsRow: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
+    skillsRow: { flexDirection: "row", flexWrap: "wrap", gap: 5 },
     skillChip: {
       fontSize: 8.5,
       color: t.accent,
       backgroundColor: t.chipBg,
       borderColor: t.chipBorder,
       borderWidth: 1,
-      paddingHorizontal: 5,
-      paddingVertical: 2,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
       borderRadius: 4,
     },
     footer: {
       position: "absolute",
-      bottom: 16,
-      left: 44,
-      right: 44,
+      bottom: 18,
+      left: 50,
+      right: 50,
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
@@ -280,7 +280,7 @@ function BayStreetResumePDF({ parsed, jobType, city }: { parsed: ParsedResume; j
   }, label);
 
   const mainHeading = (label: string) => React.createElement(View, {
-    style: { borderBottomWidth: 1.5, borderBottomColor: MA, marginBottom: 8, paddingBottom: 3 },
+    style: { borderBottomWidth: 1.5, borderBottomColor: MA, marginBottom: 10, paddingBottom: 4 },
   }, React.createElement(Text, {
     style: { fontSize: 9, fontFamily: "Helvetica-Bold", color: MA, letterSpacing: 1.2, textTransform: "uppercase" as const },
   }, label));
@@ -329,36 +329,36 @@ function BayStreetResumePDF({ parsed, jobType, city }: { parsed: ParsedResume; j
   // ── Right panel children
   const rightChildren = [
     parsed.summary && !isPlaceholder(parsed.summary)
-      ? React.createElement(View, { style: { marginBottom: 14 } },
+      ? React.createElement(View, { style: { marginBottom: 16 } },
           mainHeading("Professional Summary"),
-          React.createElement(Text, { style: { fontSize: 9.5, color: MM, lineHeight: 1.5 } }, parsed.summary)
+          React.createElement(Text, { style: { fontSize: 9.5, color: MM, lineHeight: 1.55 } }, parsed.summary)
         )
       : null,
     hasBullets
-      ? React.createElement(View, { style: { marginBottom: 14 } },
+      ? React.createElement(View, { style: { marginBottom: 16 } },
           mainHeading("Professional Experience"),
           ...(useRoleView
             ? parsed.experienceByRole!.filter(e => e?.role || (e?.bullets?.length ?? 0) > 0).map((entry, rIdx) =>
-                React.createElement(View, { key: `r-${rIdx}`, style: { marginBottom: 8 } },
+                React.createElement(View, { key: `r-${rIdx}`, style: { marginBottom: 12 } },
                   React.createElement(View, { wrap: false },
-                    React.createElement(View, { style: { flexDirection: "row", justifyContent: "space-between", marginBottom: 1 } },
+                    React.createElement(View, { style: { flexDirection: "row", justifyContent: "space-between", marginBottom: 2 } },
                       React.createElement(Text, { style: { fontSize: 10, fontFamily: "Helvetica-Bold", color: MD } }, entry.role || ""),
                       entry.dates ? React.createElement(Text, { style: { fontSize: 9, color: ML } }, entry.dates) : null
                     ),
-                    entry.company ? React.createElement(Text, { style: { fontSize: 9.5, color: MA, marginBottom: 4 } }, entry.company) : null,
+                    entry.company ? React.createElement(Text, { style: { fontSize: 9.5, color: MA, marginBottom: 5 } }, entry.company) : null,
                   ),
                   ...(entry.bullets || []).filter(Boolean).slice(0, 8).map((b, bi) =>
-                    React.createElement(View, { key: `b-${bi}`, style: { flexDirection: "row", marginBottom: 3 }, wrap: false },
+                    React.createElement(View, { key: `b-${bi}`, style: { flexDirection: "row", marginBottom: 4 }, wrap: false },
                       React.createElement(Text, { style: { fontSize: 9.5, color: MA, width: 12 } }, "▸"),
-                      React.createElement(Text, { style: { fontSize: 9.5, color: MM, flex: 1, lineHeight: 1.45 } }, b)
+                      React.createElement(Text, { style: { fontSize: 9.5, color: MM, flex: 1, lineHeight: 1.5 } }, b)
                     )
                   )
                 )
               )
             : parsed.experience.filter(Boolean).slice(0, 20).map((e, i) =>
-                React.createElement(View, { key: i, style: { flexDirection: "row", marginBottom: 3 } },
+                React.createElement(View, { key: i, style: { flexDirection: "row", marginBottom: 4 } },
                   React.createElement(Text, { style: { fontSize: 9.5, color: MA, width: 12 } }, "▸"),
-                  React.createElement(Text, { style: { fontSize: 9.5, color: MM, flex: 1, lineHeight: 1.45 } }, e)
+                  React.createElement(Text, { style: { fontSize: 9.5, color: MM, flex: 1, lineHeight: 1.5 } }, e)
                 )
               )
           )
@@ -367,24 +367,24 @@ function BayStreetResumePDF({ parsed, jobType, city }: { parsed: ParsedResume; j
   ].filter(Boolean) as React.ReactElement[];
 
   return React.createElement(Document, null,
-    React.createElement(Page, { size: "A4", style: { fontFamily: "Helvetica", backgroundColor: "#ffffff", paddingTop: 36, paddingBottom: 44 } },
+    React.createElement(Page, { size: "A4", style: { fontFamily: "Helvetica", backgroundColor: "#ffffff", paddingTop: 42, paddingBottom: 52 } },
       // Fixed dark sidebar background — repeats on every page automatically
       React.createElement(View, {
         fixed: true,
-        style: { position: "absolute", left: 0, top: 0, bottom: 0, width: 175, backgroundColor: SB },
+        style: { position: "absolute", left: 0, top: 0, bottom: 0, width: 180, backgroundColor: SB },
       }),
       // Sidebar content — absolute positioned, only renders on page 1
       React.createElement(View, {
-        style: { position: "absolute", left: 0, top: 0, width: 175, paddingHorizontal: 22, paddingTop: 36, paddingBottom: 60 },
+        style: { position: "absolute", left: 0, top: 0, width: 180, paddingHorizontal: 24, paddingTop: 42, paddingBottom: 60 },
       }, ...sidebarChildren),
       // Main content — flows naturally across pages, cleared from sidebar
       React.createElement(View, {
-        style: { marginLeft: 175, paddingHorizontal: 28 },
+        style: { marginLeft: 180, paddingLeft: 28, paddingRight: 32, paddingTop: 4 },
       }, ...rightChildren),
       // Fixed footer — repeats on every page
       React.createElement(View, {
         fixed: true,
-        style: { position: "absolute", bottom: 16, left: 22, right: 28, flexDirection: "row", justifyContent: "space-between" },
+        style: { position: "absolute", bottom: 18, left: 24, right: 32, flexDirection: "row", justifyContent: "space-between" },
       },
         React.createElement(Text, { style: { fontSize: 7, color: "#4a6fa5" } }, "Generated by Mapleins.ca"),
         React.createElement(Text, { style: { fontSize: 7, color: ML } }, `Tailored for ${jobType} roles · ${city}`)
@@ -409,76 +409,76 @@ function NewcomerResumePDF({ parsed, jobType, city }: { parsed: ParsedResume; jo
     : parsed.experience.filter(Boolean).length > 0;
 
   const sectionHeading = (label: string) => React.createElement(View, {
-    style: { backgroundColor: "#f0fdf4", paddingHorizontal: 12, paddingVertical: 5, marginBottom: 8, borderLeftWidth: 4, borderLeftColor: ACCENT },
+    style: { backgroundColor: "#f0fdf4", paddingHorizontal: 12, paddingVertical: 6, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: ACCENT },
   }, React.createElement(Text, {
     style: { fontSize: 9, fontFamily: "Helvetica-Bold", color: ACCENT, letterSpacing: 1.2, textTransform: "uppercase" as const },
   }, label));
 
   const bodyChildren = [
     parsed.summary && !isPlaceholder(parsed.summary)
-      ? React.createElement(View, { style: { marginBottom: 14 } },
+      ? React.createElement(View, { style: { marginBottom: 16 } },
           sectionHeading("Professional Summary"),
-          React.createElement(Text, { style: { fontSize: 9.5, color: MID, lineHeight: 1.5 } }, parsed.summary)
+          React.createElement(Text, { style: { fontSize: 9.5, color: MID, lineHeight: 1.55 } }, parsed.summary)
         )
       : null,
     hasBullets
-      ? React.createElement(View, { style: { marginBottom: 14 } },
+      ? React.createElement(View, { style: { marginBottom: 16 } },
           sectionHeading("Professional Experience"),
           ...(useRoleView
             ? parsed.experienceByRole!.filter(e => e?.role || (e?.bullets?.length ?? 0) > 0).map((entry, rIdx) =>
-                React.createElement(View, { key: `r-${rIdx}`, style: { marginBottom: 8 } },
+                React.createElement(View, { key: `r-${rIdx}`, style: { marginBottom: 12 } },
                   React.createElement(View, { wrap: false },
-                    React.createElement(View, { style: { flexDirection: "row", justifyContent: "space-between", marginBottom: 1 } },
+                    React.createElement(View, { style: { flexDirection: "row", justifyContent: "space-between", marginBottom: 2 } },
                       React.createElement(Text, { style: { fontSize: 10, fontFamily: "Helvetica-Bold", color: DARK } }, entry.role || ""),
                       entry.dates ? React.createElement(Text, { style: { fontSize: 9, color: LIGHT } }, entry.dates) : null
                     ),
-                    entry.company ? React.createElement(Text, { style: { fontSize: 9.5, color: ACCENT, marginBottom: 4 } }, entry.company) : null,
+                    entry.company ? React.createElement(Text, { style: { fontSize: 9.5, color: ACCENT, marginBottom: 5 } }, entry.company) : null,
                   ),
                   ...(entry.bullets || []).filter(Boolean).slice(0, 8).map((b, bi) =>
-                    React.createElement(View, { key: `b-${bi}`, style: { flexDirection: "row", marginBottom: 3 }, wrap: false },
+                    React.createElement(View, { key: `b-${bi}`, style: { flexDirection: "row", marginBottom: 4 }, wrap: false },
                       React.createElement(Text, { style: { fontSize: 9.5, color: ACCENT, width: 12 } }, "▸"),
-                      React.createElement(Text, { style: { fontSize: 9.5, color: MID, flex: 1, lineHeight: 1.45 } }, b)
+                      React.createElement(Text, { style: { fontSize: 9.5, color: MID, flex: 1, lineHeight: 1.5 } }, b)
                     )
                   )
                 )
               )
             : parsed.experience.filter(Boolean).slice(0, 20).map((e, i) =>
-                React.createElement(View, { key: i, style: { flexDirection: "row", marginBottom: 3 } },
+                React.createElement(View, { key: i, style: { flexDirection: "row", marginBottom: 4 } },
                   React.createElement(Text, { style: { fontSize: 9.5, color: ACCENT, width: 12 } }, "▸"),
-                  React.createElement(Text, { style: { fontSize: 9.5, color: MID, flex: 1, lineHeight: 1.45 } }, e)
+                  React.createElement(Text, { style: { fontSize: 9.5, color: MID, flex: 1, lineHeight: 1.5 } }, e)
                 )
               )
           )
         )
       : null,
     parsed.skills.length > 0
-      ? React.createElement(View, { style: { marginBottom: 14 } },
+      ? React.createElement(View, { style: { marginBottom: 16 } },
           sectionHeading("Core Competencies"),
-          React.createElement(View, { style: { flexDirection: "row", flexWrap: "wrap", gap: 5 } },
+          React.createElement(View, { style: { flexDirection: "row", flexWrap: "wrap", gap: 6 } },
             ...parsed.skills.filter(Boolean).slice(0, 16).map((s, i) =>
-              React.createElement(Text, { key: i, style: { fontSize: 8.5, color: ACCENT, backgroundColor: "#f0fdf4", borderColor: "#bbf7d0", borderWidth: 1, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 } }, s)
+              React.createElement(Text, { key: i, style: { fontSize: 8.5, color: ACCENT, backgroundColor: "#f0fdf4", borderColor: "#bbf7d0", borderWidth: 1, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 4 } }, s)
             )
           )
         )
       : null,
     parsed.education?.length > 0 && !isPlaceholder(parsed.education[0])
-      ? React.createElement(View, { style: { marginBottom: 14 } },
+      ? React.createElement(View, { style: { marginBottom: 16 } },
           sectionHeading("Education"),
           ...parsed.education.filter(e => e && !isPlaceholder(e)).map((e, i) =>
-            React.createElement(View, { key: i, style: { flexDirection: "row", marginBottom: 3 }, wrap: false },
+            React.createElement(View, { key: i, style: { flexDirection: "row", marginBottom: 4 }, wrap: false },
               React.createElement(Text, { style: { fontSize: 9.5, color: ACCENT, width: 12 } }, "▸"),
-              React.createElement(Text, { style: { fontSize: 9.5, color: MID, flex: 1 } }, e)
+              React.createElement(Text, { style: { fontSize: 9.5, color: MID, flex: 1, lineHeight: 1.45 } }, e)
             )
           )
         )
       : null,
     (parsed.certifications?.filter(c => c && !isPlaceholder(c)).length ?? 0) > 0
-      ? React.createElement(View, { style: { marginBottom: 14 } },
+      ? React.createElement(View, { style: { marginBottom: 16 } },
           sectionHeading("Certifications"),
           ...(parsed.certifications ?? []).filter(c => c && !isPlaceholder(c)).map((c, i) =>
-            React.createElement(View, { key: i, style: { flexDirection: "row", marginBottom: 3 }, wrap: false },
+            React.createElement(View, { key: i, style: { flexDirection: "row", marginBottom: 4 }, wrap: false },
               React.createElement(Text, { style: { fontSize: 9.5, color: ACCENT, width: 12 } }, "▸"),
-              React.createElement(Text, { style: { fontSize: 9.5, color: MID, flex: 1 } }, c)
+              React.createElement(Text, { style: { fontSize: 9.5, color: MID, flex: 1, lineHeight: 1.45 } }, c)
             )
           )
         )
@@ -487,17 +487,17 @@ function NewcomerResumePDF({ parsed, jobType, city }: { parsed: ParsedResume; jo
 
   return React.createElement(Document, null,
     React.createElement(Page, { size: "A4", style: { fontFamily: "Helvetica", backgroundColor: "#ffffff" } },
-      React.createElement(View, { style: { backgroundColor: BAND, paddingHorizontal: 48, paddingTop: 32, paddingBottom: 24 } },
-        React.createElement(Text, { style: { fontSize: 24, fontFamily: "Helvetica-Bold", color: "#ffffff", letterSpacing: 0.3, marginBottom: 4 } }, parsed.name),
+      React.createElement(View, { style: { backgroundColor: BAND, paddingHorizontal: 50, paddingTop: 36, paddingBottom: 28 } },
+        React.createElement(Text, { style: { fontSize: 24, fontFamily: "Helvetica-Bold", color: "#ffffff", letterSpacing: 0.3, marginBottom: 5 } }, parsed.name),
         React.createElement(Text, { style: { fontSize: 10, color: "#bbf7d0", fontFamily: "Helvetica-Bold", marginBottom: 10 } }, jobType),
         contactParts.length > 0
-          ? React.createElement(View, { style: { flexDirection: "row", flexWrap: "wrap", gap: 16 } },
+          ? React.createElement(View, { style: { flexDirection: "row", flexWrap: "wrap", gap: 18 } },
               ...contactParts.map(p => React.createElement(Text, { key: p, style: { fontSize: 9, color: "#d1fae5" } }, p))
             )
           : null
       ),
-      React.createElement(View, { style: { paddingHorizontal: 48, paddingTop: 24, paddingBottom: 60 } }, ...bodyChildren),
-      React.createElement(View, { style: { position: "absolute", bottom: 18, left: 48, right: 48, flexDirection: "row", justifyContent: "space-between" } },
+      React.createElement(View, { style: { paddingHorizontal: 50, paddingTop: 28, paddingBottom: 52 } }, ...bodyChildren),
+      React.createElement(View, { style: { position: "absolute", bottom: 18, left: 50, right: 50, flexDirection: "row", justifyContent: "space-between" } },
         React.createElement(Text, { style: { fontSize: 7.5, color: "#9ca3af" } }, "Generated by Mapleins.ca"),
         React.createElement(Text, { style: { fontSize: 7.5, color: "#9ca3af" } }, `Tailored for ${jobType} roles · ${city}`)
       )
