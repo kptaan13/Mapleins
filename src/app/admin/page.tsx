@@ -48,6 +48,8 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailResult, setEmailResult] = useState<{ sent: number; failed: number } | null>(null);
 
   useEffect(() => {
     async function loadStats() {
@@ -129,6 +131,22 @@ export default function AdminPage() {
     router.push("/");
   };
 
+  const handleSendWaitlistEmail = async () => {
+    if (!confirm("Send the promo email to all waitlist members?")) return;
+    setEmailSending(true);
+    setEmailResult(null);
+    try {
+      const res = await fetch("/api/admin/send-waitlist-email", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      setEmailResult({ sent: data.sent, failed: data.failed });
+    } catch (err) {
+      alert("Error sending emails: " + (err as Error).message);
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b">
@@ -156,8 +174,42 @@ export default function AdminPage() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-10">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-        <p className="text-gray-500 text-sm mb-8">Overview of users, donations, and platform activity.</p>
+        <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">Admin Dashboard</h1>
+            <p className="text-gray-500 text-sm">Overview of users, donations, and platform activity.</p>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <button
+              onClick={handleSendWaitlistEmail}
+              disabled={emailSending}
+              className="flex items-center gap-2 bg-[#166534] text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-[#14532d] disabled:opacity-50 transition-colors"
+            >
+              {emailSending ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Sending…
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Email Waitlist
+                </>
+              )}
+            </button>
+            {emailResult && (
+              <p className="text-xs text-gray-500">
+                <span className="text-green-700 font-semibold">{emailResult.sent} sent</span>
+                {emailResult.failed > 0 && <span className="text-red-500 ml-2">{emailResult.failed} failed</span>}
+              </p>
+            )}
+          </div>
+        </div>
 
         {loading && (
           <div className="text-center py-20 text-gray-400">Loading stats…</div>

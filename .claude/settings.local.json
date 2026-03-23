@@ -30,7 +30,10 @@
       "Bash(grep -r stripe. /c/Users/kptaa/.openclaw/workspace/mapleins/src/app/api --include=*.ts)",
       "mcp__29f1d063-4f2b-4817-bb70-5e85e83c04b2__list_projects",
       "mcp__29f1d063-4f2b-4817-bb70-5e85e83c04b2__get_runtime_logs",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
