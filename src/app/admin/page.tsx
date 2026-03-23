@@ -24,12 +24,23 @@ type PaymentRow = {
   user_email?: string;
 };
 
+type FeedbackRow = {
+  id: string;
+  rating: number | null;
+  category: string | null;
+  message: string;
+  email: string | null;
+  page: string | null;
+  created_at: string;
+};
+
 type Stats = {
   totalUsers: number;
   paidUsers: number;
   totalRevenue: number;
   recentPayments: PaymentRow[];
   recentUsers: UserRow[];
+  recentFeedback: FeedbackRow[];
 };
 
 export default function AdminPage() {
@@ -77,6 +88,13 @@ export default function AdminPage() {
 
         if (paymentsErr) throw paymentsErr;
 
+        // Fetch feedback
+        const { data: feedback } = await supabase
+          .from("feedback")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(50);
+
         const users = (profiles || []) as UserRow[];
         const pays = (payments || []) as PaymentRow[];
 
@@ -92,6 +110,7 @@ export default function AdminPage() {
           totalRevenue: pays.reduce((sum, p) => sum + (p.amount || 0), 0),
           recentPayments: enriched,
           recentUsers: users.slice(0, 10),
+          recentFeedback: (feedback || []) as FeedbackRow[],
         });
       } catch (err) {
         console.error(err);
@@ -259,6 +278,48 @@ export default function AdminPage() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Feedback */}
+            <div className="bg-white rounded-xl border p-6 mt-6">
+              <h2 className="text-base font-semibold text-gray-900 mb-4">
+                User Feedback
+                <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                  {stats.recentFeedback.length}
+                </span>
+              </h2>
+              {stats.recentFeedback.length === 0 ? (
+                <p className="text-sm text-gray-400">No feedback yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {stats.recentFeedback.map((f) => (
+                    <div key={f.id} className="rounded-xl border border-gray-100 p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            {f.rating && (
+                              <span className="text-yellow-400 text-sm">{"★".repeat(f.rating)}{"☆".repeat(5 - f.rating)}</span>
+                            )}
+                            {f.category && (
+                              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{f.category}</span>
+                            )}
+                            {f.page && (
+                              <span className="text-xs text-gray-400">{f.page}</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-800">{f.message}</p>
+                          {f.email && (
+                            <p className="text-xs text-[#166534] mt-1">{f.email}</p>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-400 whitespace-nowrap">
+                          {new Date(f.created_at).toLocaleDateString("en-CA")}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </>
         )}

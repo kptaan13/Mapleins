@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import FeedbackWidget from "@/components/FeedbackWidget";
 
 const siteTitle = "Mapleins - Get Canadian Job Interviews or Pay Nothing";
 const siteDescription =
@@ -32,6 +33,7 @@ export default function RootLayout({
         style={{ fontFamily: '"GeistSans", system-ui, -apple-system, sans-serif' }}
       >
         {children}
+        <FeedbackWidget />
       </body>
     </html>
   );
