@@ -486,8 +486,8 @@ function NewcomerResumePDF({ parsed, jobType, city }: { parsed: ParsedResume; jo
   ].filter(Boolean) as React.ReactElement[];
 
   return React.createElement(Document, null,
-    React.createElement(Page, { size: "A4", style: { fontFamily: "Helvetica", backgroundColor: "#ffffff" } },
-      React.createElement(View, { style: { backgroundColor: BAND, paddingHorizontal: 50, paddingTop: 36, paddingBottom: 28 } },
+    React.createElement(Page, { size: "A4", style: { fontFamily: "Helvetica", backgroundColor: "#ffffff", paddingTop: 36 } },
+      React.createElement(View, { style: { backgroundColor: BAND, paddingHorizontal: 50, paddingTop: 36, paddingBottom: 28, marginTop: -36 } },
         React.createElement(Text, { style: { fontSize: 24, fontFamily: "Helvetica-Bold", color: "#ffffff", letterSpacing: 0.3, marginBottom: 5 } }, parsed.name),
         React.createElement(Text, { style: { fontSize: 10, color: "#bbf7d0", fontFamily: "Helvetica-Bold", marginBottom: 10 } }, jobType),
         contactParts.length > 0
