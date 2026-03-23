@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npx next:*)",
+      "Bash(npm run:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(cmd /c \"taskkill /F /IM node.exe\")",
+      "Bash(cmd /c \"netstat -ano | findstr :3000\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(where npm:*)",
+      "Bash(cmd /c \"start /B npm.cmd run dev -- --port 3001 > C:\\\\Users\\\\kptaa\\\\AppData\\\\Local\\\\Temp\\\\mapleins-dev.log 2>&1\")",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(find C:/Users/kptaa/.openclaw/agents -name *.json -o -name *.md)",
+      "Bash(find C:/Users/kptaa/.openclaw/ -name *.json)",
+      "Bash(xargs grep:*)",
+      "Bash(find C:/Users/kptaa/.openclaw/ -name *.json ! -path */node_modules/* ! -path */sessions/*)",
+      "Bash(find C:/Users/kptaa/.openclaw/ -name *.md ! -path */node_modules/*)",
+      "Bash(find C:/Users/kptaa/.openclaw/ -name *.yaml -o -name *.yml -o -name *.toml)",
+      "Bash(find C:/Users/kptaa/.openclaw/ -name stop* -o -name *stop*)",
+      "Bash(find C:/Users/kptaa/.claude/plugins/ -name *.sh -o -name *.py)",
+      "Bash(find /c/Users/kptaa/.openclaw/workspace/mapleins/supabase/migrations -type f -name *.sql)",
+      "Bash(find /c/Users/kptaa/.openclaw/workspace/mapleins -type f \\\\\\(-name *.sql -o -name *schema* -o -name *migration* \\\\\\))",
+      "Bash(grep -r \"profiles\\\\|payments\" /c/Users/kptaa/.openclaw/workspace/mapleins/src --include=*.ts --include=*.tsx)",
+      "Bash(grep -r \"STRIPE.*PRICE\\\\|STRIPE.*PRODUCT\\\\|subscription\\\\|priceId\\\\|productId\" /c/Users/kptaa/.openclaw/workspace/mapleins/src --include=*.ts --include=*.tsx)",
+      "Bash(find /c/Users/kptaa/.openclaw/workspace/mapleins/src -type f -name *.ts -exec grep -l \"interface.*Profile\\\\|type.*Profile\\\\|interface.*Payment\\\\|type.*Payment\" {})",
+      "Bash(2)",
+      "Bash(grep -r stripe. /c/Users/kptaa/.openclaw/workspace/mapleins/src/app/api --include=*.ts)",
+      "mcp__29f1d063-4f2b-4817-bb70-5e85e83c04b2__list_projects",
+      "mcp__29f1d063-4f2b-4817-bb70-5e85e83c04b2__get_runtime_logs",
+      "Bash(npm install:*)"
+    ]
+  }
+}

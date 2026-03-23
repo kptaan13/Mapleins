@@ -14,6 +14,16 @@ const VERSION_HISTORY_KEY = "mapleins_version_history";
 const FREE_DOWNLOAD_KEY = "mapleins_free_downloads";
 const FREE_DOWNLOAD_LIMIT = 3;
 const UNLIMITED_EMAILS = ["rohan61034kakkar@gmail.com"];
+const PROMO_TRIAL_KEY = "mapleins_promo_trial";
+
+const getPromoTrial = (): boolean => {
+  try {
+    const raw = localStorage.getItem(PROMO_TRIAL_KEY);
+    if (!raw) return false;
+    const { expiresAt } = JSON.parse(raw);
+    return new Date(expiresAt) > new Date();
+  } catch { return false; }
+};
 
 type ResumeVersion = {
   id: string;
@@ -251,6 +261,10 @@ function ResumeResultsContent() {
   // Version history & paywall
   const [versionHistory, setVersionHistory] = useState<ResumeVersion[]>([]);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showPromoInput, setShowPromoInput] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoError, setPromoError] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [redownloading, setRedownloading] = useState<string | null>(null);
 
@@ -392,7 +406,7 @@ function ResumeResultsContent() {
     // Freemium gate: soft paywall after FREE_DOWNLOAD_LIMIT
     const savedEmail = (() => { try { return localStorage.getItem("mapleins_capture_email") || ""; } catch { return ""; } })();
     const isUnlimited = UNLIMITED_EMAILS.includes(savedEmail.toLowerCase().trim());
-    if (!skipPaywallCheck && !isUnlimited && getFreeDownloadCount() >= FREE_DOWNLOAD_LIMIT) {
+    if (!skipPaywallCheck && !isUnlimited && !getPromoTrial() && getFreeDownloadCount() >= FREE_DOWNLOAD_LIMIT) {
       setShowPaywall(true);
       return;
     }
@@ -1192,6 +1206,68 @@ function ResumeResultsContent() {
                 >
                   ❤️ Support Mapleins — keep it free
                 </Link>
+
+                {/* Promo code */}
+                {!showPromoInput ? (
+                  <button
+                    type="button"
+                    onClick={() => { setShowPromoInput(true); setPromoError(""); }}
+                    className="w-full py-2.5 text-sm text-[#166534] font-semibold hover:underline transition-colors"
+                  >
+                    Have a promo code?
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={promoCode}
+                        onChange={(e) => { setPromoCode(e.target.value); setPromoError(""); }}
+                        placeholder="Enter promo code"
+                        className="flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#166534]"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={promoLoading || !promoCode.trim()}
+                        onClick={async () => {
+                          setPromoLoading(true);
+                          setPromoError("");
+                          try {
+                            const res = await fetch("/api/promo/redeem", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ code: promoCode }),
+                            });
+                            const data = await res.json();
+                            if (data.valid) {
+                              try { localStorage.setItem(PROMO_TRIAL_KEY, JSON.stringify({ expiresAt: data.expiresAt })); } catch { /* ignore */ }
+                              setShowPaywall(false);
+                              setShowPromoInput(false);
+                              setPromoCode("");
+                              handleDownload(true);
+                            } else {
+                              setPromoError(data.error || "Invalid promo code.");
+                            }
+                          } catch {
+                            setPromoError("Something went wrong. Please try again.");
+                          } finally {
+                            setPromoLoading(false);
+                          }
+                        }}
+                        className="px-4 py-2.5 rounded-xl bg-[#166534] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#14532d] transition-colors"
+                      >
+                        {promoLoading ? "..." : "Apply"}
+                      </button>
+                    </div>
+                    {promoError && <p className="text-red-500 text-xs font-medium">{promoError}</p>}
+                  </div>
+                )}
+
                 <button
                   type="button"
                   onClick={() => handleDownload(true)}

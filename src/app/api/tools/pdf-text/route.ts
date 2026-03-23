@@ -6,36 +6,14 @@
 export const runtime = "nodejs";
 
 import { NextRequest } from "next/server";
-import * as pdfParseModule from "pdf-parse";
-
-type PdfParseLegacyFn = (buffer: Buffer) => Promise<{ text?: string }>;
-type PdfParseClassInstance = { getText: () => Promise<{ text?: string }>; destroy: () => Promise<void> };
-type PdfParseClassCtor = new (opts: { data: Buffer }) => PdfParseClassInstance;
 
 async function extractTextFromBuffer(buffer: Buffer): Promise<string> {
-  const m = pdfParseModule as {
-    PDFParse?: PdfParseClassCtor;
-    default?: PdfParseLegacyFn;
-    pdf?: PdfParseLegacyFn;
-  };
-
-  if (typeof m.PDFParse === "function") {
-    const parser = new m.PDFParse({ data: buffer });
-    try {
-      const result = await parser.getText();
-      return result?.text ?? "";
-    } finally {
-      await parser.destroy();
-    }
-  }
-
-  const legacyFn = m.default ?? m.pdf;
-  if (typeof legacyFn === "function") {
-    const result = await legacyFn(buffer);
-    return result?.text ?? "";
-  }
-
-  throw new Error("pdf-parse API not available");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pdfParse = require("pdf-parse");
+  const fn = typeof pdfParse === "function" ? pdfParse : pdfParse.default ?? pdfParse.pdf;
+  if (typeof fn !== "function") throw new Error("pdf-parse not available");
+  const result = await fn(buffer);
+  return result?.text?.trim() ?? "";
 }
 
 export async function POST(request: NextRequest) {

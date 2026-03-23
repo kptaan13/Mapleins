@@ -56,6 +56,16 @@ type ATSBreakdown = {
   total: number;
 };
 
+const PROMO_TRIAL_KEY = "mapleins_promo_trial";
+const getPromoTrial = (): boolean => {
+  try {
+    const raw = localStorage.getItem(PROMO_TRIAL_KEY);
+    if (!raw) return false;
+    const { expiresAt } = JSON.parse(raw);
+    return new Date(expiresAt) > new Date();
+  } catch { return false; }
+};
+
 // ─── Logic ────────────────────────────────────────────────────────────────────
 
 function calcATS(resume: ResumeData, jobType: string): ATSBreakdown {
@@ -198,6 +208,10 @@ function EditorContent() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [aiGenerating, setAiGenerating] = useState(false);
   const [showEditorPaywall, setShowEditorPaywall] = useState(false);
+  const [showPromoInput, setShowPromoInput] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoError, setPromoError] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
   const hintTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
@@ -351,7 +365,7 @@ function EditorContent() {
   const incrementFreeDownloadCount = () => { try { localStorage.setItem(FREE_DOWNLOAD_KEY, String(getFreeDownloadCount() + 1)); } catch { /* ignore */ } };
 
   const downloadPdf = async (skipPaywallCheck = false) => {
-    if (!skipPaywallCheck && getFreeDownloadCount() >= FREE_DOWNLOAD_LIMIT) {
+    if (!skipPaywallCheck && !getPromoTrial() && getFreeDownloadCount() >= FREE_DOWNLOAD_LIMIT) {
       setShowEditorPaywall(true);
       return;
     }
@@ -772,6 +786,63 @@ function EditorContent() {
               >
                 ❤️ Support Mapleins
               </Link>
+
+              {/* Promo code */}
+              {!showPromoInput ? (
+                <button
+                  type="button"
+                  onClick={() => { setShowPromoInput(true); setPromoError(""); }}
+                  className="w-full py-2 text-sm text-[#166534] font-semibold hover:underline transition-colors"
+                >
+                  Have a promo code?
+                </button>
+              ) : (
+                <div className="space-y-2 text-left">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={promoCode}
+                      onChange={(e) => { setPromoCode(e.target.value); setPromoError(""); }}
+                      placeholder="Enter promo code"
+                      className="flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#166534]"
+                    />
+                    <button
+                      type="button"
+                      disabled={promoLoading || !promoCode.trim()}
+                      onClick={async () => {
+                        setPromoLoading(true);
+                        setPromoError("");
+                        try {
+                          const res = await fetch("/api/promo/redeem", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ code: promoCode }),
+                          });
+                          const data = await res.json();
+                          if (data.valid) {
+                            try { localStorage.setItem(PROMO_TRIAL_KEY, JSON.stringify({ expiresAt: data.expiresAt })); } catch { /* ignore */ }
+                            setShowEditorPaywall(false);
+                            setShowPromoInput(false);
+                            setPromoCode("");
+                            downloadPdf(true);
+                          } else {
+                            setPromoError(data.error || "Invalid promo code.");
+                          }
+                        } catch {
+                          setPromoError("Something went wrong. Please try again.");
+                        } finally {
+                          setPromoLoading(false);
+                        }
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-[#166534] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#14532d] transition-colors"
+                    >
+                      {promoLoading ? "..." : "Apply"}
+                    </button>
+                  </div>
+                  {promoError && <p className="text-red-500 text-xs font-medium">{promoError}</p>}
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={() => downloadPdf(true)}
