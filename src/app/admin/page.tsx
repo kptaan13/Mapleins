@@ -131,6 +131,51 @@ export default function AdminPage() {
     router.push("/");
   };
 
+  const downloadCSV = (filename: string, rows: Record<string, unknown>[]) => {
+    if (!rows.length) return;
+    const headers = Object.keys(rows[0]);
+    const csv = [
+      headers.join(","),
+      ...rows.map((r) =>
+        headers.map((h) => {
+          const v = String(r[h] ?? "").replace(/"/g, '""');
+          return `"${v}"`;
+        }).join(",")
+      ),
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadUsers = async () => {
+    const supabase = createClient();
+    const { data } = await supabase.from("profiles").select("id, email, has_paid, paid_at, created_at").order("created_at", { ascending: false });
+    downloadCSV("mapleins-users.csv", (data || []) as Record<string, unknown>[]);
+  };
+
+  const handleDownloadPayments = async () => {
+    const supabase = createClient();
+    const { data } = await supabase.from("payments").select("*").order("paid_at", { ascending: false });
+    downloadCSV("mapleins-payments.csv", (data || []) as Record<string, unknown>[]);
+  };
+
+  const handleDownloadWaitlist = async () => {
+    const supabase = createClient();
+    const { data } = await supabase.from("waitlist").select("*").order("created_at", { ascending: false });
+    downloadCSV("mapleins-waitlist.csv", (data || []) as Record<string, unknown>[]);
+  };
+
+  const handleDownloadFeedback = async () => {
+    const supabase = createClient();
+    const { data } = await supabase.from("feedback").select("*").order("created_at", { ascending: false });
+    downloadCSV("mapleins-feedback.csv", (data || []) as Record<string, unknown>[]);
+  };
+
   const handleSendWaitlistEmail = async () => {
     if (!confirm("Send the promo email to all waitlist members?")) return;
     setEmailSending(true);
@@ -209,6 +254,26 @@ export default function AdminPage() {
               </p>
             )}
           </div>
+        </div>
+
+        {/* Export buttons */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          <button onClick={handleDownloadUsers} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-2 rounded-lg hover:border-[#166534] hover:text-[#166534] transition-colors">
+            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Users CSV
+          </button>
+          <button onClick={handleDownloadPayments} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-2 rounded-lg hover:border-[#166534] hover:text-[#166534] transition-colors">
+            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Payments CSV
+          </button>
+          <button onClick={handleDownloadWaitlist} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-2 rounded-lg hover:border-[#166534] hover:text-[#166534] transition-colors">
+            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Waitlist CSV
+          </button>
+          <button onClick={handleDownloadFeedback} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-2 rounded-lg hover:border-[#166534] hover:text-[#166534] transition-colors">
+            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Feedback CSV
+          </button>
         </div>
 
         {loading && (
