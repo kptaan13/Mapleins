@@ -896,12 +896,19 @@ BANNED WORDS: "passionate", "results-oriented", "dynamic", "team player", "hardw
 ════════════════════════════════════════
 3. EXPERIENCE BULLETS
 ════════════════════════════════════════
-For EVERY role, generate 5–7 strong bullets:
+Bullet count is determined by the seniority of the role title:
+
+  Director / Manager / Owner / Head          → 7 bullets
+  Supervisor / Lead / Coordinator / Senior   → 6 bullets
+  Associate / Specialist / Analyst / Officer → 5 bullets
+  Assistant / Crew / Junior / Support / Intern → 4 bullets
+
+Higher title = more bullets = more responsibilities shown. Never go below 4 or above 7.
 
 RULES:
 1. Start every bullet with a strong past-tense action verb.
 2. NEVER use weak phrases: ${WEAK_PHRASES.map((p) => `"${p}"`).join(", ")}.
-3. Minimum 5 bullets per role — never collapse a detailed role into fewer.
+3. Respect the bullet count per title level above — never collapse a detailed role.
 4. Numbers & metrics: use ONLY what is explicitly in the original resume.
    Formula (when numbers exist): Action Verb + Scope + Result + Metric (+ Timeframe)
    Formula (when no numbers): Action Verb + Scope + Method/Approach + Impact
@@ -1012,8 +1019,13 @@ Return ONLY valid JSON. No markdown. No commentary outside the JSON.
     const originalRoles = parsed.experienceByRole ?? [];
     const aiRoles = json.experienceByRole ?? [];
 
-    const MIN_BULLETS_PER_ROLE = 5;
-    const MAX_BULLETS_PER_ROLE = 8;
+    const bulletRangeForRole = (title: string): { min: number; max: number } => {
+      const t = (title || "").toLowerCase();
+      if (/director|manager|owner|head|vp|vice president|president|chief/.test(t)) return { min: 7, max: 7 };
+      if (/supervisor|lead|coordinator|senior|team lead/.test(t))                  return { min: 6, max: 6 };
+      if (/associate|specialist|analyst|officer|representative|consultant/.test(t)) return { min: 5, max: 5 };
+      return { min: 4, max: 4 }; // assistant / crew / junior / support / intern / default
+    };
 
     const mergedByRole: ExperienceEntry[] = aiRoles.map((aiEntry, idx) => {
       const original = originalRoles[idx];
@@ -1033,34 +1045,25 @@ Return ONLY valid JSON. No markdown. No commentary outside the JSON.
         ? [] // treat as if AI returned nothing — will fall back to originals below
         : (aiEntry.bullets ?? []).filter(Boolean);
 
+      const roleTitle = original?.role || aiEntry.role || "";
+      const { min: MIN_BULLETS, max: MAX_BULLETS } = bulletRangeForRole(roleTitle);
+
       let bullets = aiBullets;
 
-      // If the original role had 5+ bullets, we want to keep that richness.
-      if (originalBullets.length >= MIN_BULLETS_PER_ROLE) {
-        if (aiBullets.length === 0) {
-          // AI failed to return bullets — fall back to original, capped at MAX_BULLETS_PER_ROLE
-          bullets = originalBullets.slice(0, MAX_BULLETS_PER_ROLE);
-        } else if (aiBullets.length < MIN_BULLETS_PER_ROLE) {
-          // AI returned too few — top up with originals, but only non-duplicate ones
-          const combined = [...aiBullets];
-          for (const b of originalBullets) {
-            if (combined.length >= MIN_BULLETS_PER_ROLE) break;
-            if (!combined.includes(b)) combined.push(b);
-          }
-          bullets = combined.slice(0, MAX_BULLETS_PER_ROLE);
-        } else {
-          // AI returned enough bullets — use them directly, no originals appended
-          bullets = aiBullets.slice(0, MAX_BULLETS_PER_ROLE);
-        }
-      } else if (aiBullets.length < MIN_BULLETS_PER_ROLE && originalBullets.length > aiBullets.length) {
-        // Original had fewer than 5, but still more than AI: gently top up from original
-        const target = Math.min(MIN_BULLETS_PER_ROLE, originalBullets.length);
+      if (aiBullets.length === 0) {
+        // AI failed — fall back to originals capped at tier max
+        bullets = originalBullets.slice(0, MAX_BULLETS);
+      } else if (aiBullets.length < MIN_BULLETS) {
+        // AI returned too few — top up with originals to hit tier minimum
         const combined = [...aiBullets];
         for (const b of originalBullets) {
-          if (combined.length >= target) break;
+          if (combined.length >= MIN_BULLETS) break;
           if (!combined.includes(b)) combined.push(b);
         }
-        bullets = combined;
+        bullets = combined.slice(0, MAX_BULLETS);
+      } else {
+        // AI returned enough — cap at tier max
+        bullets = aiBullets.slice(0, MAX_BULLETS);
       }
 
       return {
