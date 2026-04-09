@@ -34,9 +34,11 @@ type AnalysisResult = {
   targetRole?: string;
   city?: string;
   jobDescription?: string;
+  atsScore?: number;
 };
 
 const STORAGE_KEY = "mapleinsResumeAnalysis";
+const CHECKLIST_KEY = "mapleins_checklist";
 
 // ── localStorage helpers (cache / offline fallback) ──
 function loadLocal(): AnalysisResult | null {
@@ -55,15 +57,167 @@ function clearLocal() {
   try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
 }
 
+// ── Checklist storage ──
+function loadChecklist(): Set<string> {
+  try {
+    const raw = localStorage.getItem(CHECKLIST_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw) as string[];
+    return new Set(arr);
+  } catch { return new Set(); }
+}
+function saveChecklist(checked: Set<string>) {
+  try {
+    localStorage.setItem(CHECKLIST_KEY, JSON.stringify(Array.from(checked)));
+  } catch { /* ignore */ }
+}
+
+// ── Checklist data ──
+type ChecklistItem = { id: string; label: string };
+type ChecklistCategory = { id: string; title: string; items: ChecklistItem[] };
+
+const CHECKLIST_CATEGORIES: ChecklistCategory[] = [
+  {
+    id: "resume",
+    title: "📄 Resume Ready",
+    items: [
+      { id: "r1", label: "Resume tailored for Canadian market" },
+      { id: "r2", label: "ATS score above 70" },
+      { id: "r3", label: "Contact info includes LinkedIn URL" },
+      { id: "r4", label: "No photos, age, or marital status (Canadian standard)" },
+      { id: "r5", label: "One-page (under 5 years exp) or two-page max" },
+    ],
+  },
+  {
+    id: "online",
+    title: "🌐 Online Presence",
+    items: [
+      { id: "o1", label: "LinkedIn profile updated and matches resume" },
+      { id: "o2", label: "LinkedIn has a professional headshot" },
+      { id: "o3", label: 'Set LinkedIn "Open to Work" (visible to recruiters only)' },
+      { id: "o4", label: "Google yourself and clean up anything unprofessional" },
+    ],
+  },
+  {
+    id: "applications",
+    title: "📬 Applications",
+    items: [
+      { id: "a1", label: "Applied to 5+ jobs today" },
+      { id: "a2", label: "Cover letter customized per application" },
+      { id: "a3", label: "Used job boards: Indeed, LinkedIn, Workopolis, Job Bank" },
+      { id: "a4", label: "Reached out to 2+ people in your network this week" },
+      { id: "a5", label: "Followed up on applications older than 1 week" },
+    ],
+  },
+  {
+    id: "interview",
+    title: "🎤 Interview Ready",
+    items: [
+      { id: "i1", label: "Researched company before interview" },
+      { id: "i2", label: "Prepared 3 STAR stories" },
+      { id: "i3", label: "Practiced answers out loud" },
+      { id: "i4", label: "Sent thank-you email after last interview" },
+    ],
+  },
+];
+
+const TOTAL_CHECKLIST_ITEMS = CHECKLIST_CATEGORIES.reduce(
+  (sum, cat) => sum + cat.items.length,
+  0
+);
+
+type DashboardSection = "overview" | "resume" | "interview" | "checklist" | "jobsearch";
+
+// ── Interview Prep data ──
+type InterviewQuestion = { question: string; tip: string };
+
+const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
+  { question: "Tell me about yourself", tip: "Focus on Canadian experience first, then international. Keep it under 2 minutes." },
+  { question: "Why do you want to work here?", tip: "Research the company's Canadian operations, values, and recent news." },
+  { question: "What are your strengths?", tip: "Give concrete examples relevant to Canadian workplace culture — collaboration, initiative, adaptability." },
+  { question: "Describe a challenge you overcame", tip: "Use the STAR framework: Situation, Task, Action, Result. Numbers help." },
+  { question: "Where do you see yourself in 5 years?", tip: "Show commitment to Canada and alignment with the company's growth trajectory." },
+  { question: "Why did you leave your last job?", tip: "Stay positive — mention growth opportunities, new challenges, or relocation." },
+  { question: "Do you have Canadian experience?", tip: "Address it proactively. Bridge international experience to Canadian context with transferable skills." },
+  { question: "Are you legally allowed to work in Canada?", tip: "Answer clearly and directly with your immigration status. Employers need certainty." },
+  { question: "What do you know about Canadian workplace culture?", tip: "Mention collaboration, work-life balance, diversity, and indirect communication style." },
+  { question: "What are your salary expectations?", tip: "Research Canadian market rates on Glassdoor, Payscale, or salary.ca before answering." },
+];
+
+const CANADIAN_TIPS = [
+  { icon: "🍁", tip: "Address the \"Canadian experience\" question upfront — employers respect candidates who acknowledge it proactively." },
+  { icon: "🤝", tip: "Canadians value humility — don't oversell. Use \"we\" to credit your team, not just \"I\"." },
+  { icon: "⏰", tip: "Punctuality is highly valued — arrive 10 minutes early to every interview, never late." },
+  { icon: "📧", tip: "Always send a thank-you email within 24 hours of your interview. It sets you apart." },
+  { icon: "🌍", tip: "Diversity is celebrated — your international background is an asset. Own it confidently." },
+  { icon: "💬", tip: "Direct but polite — Canadians appreciate honesty wrapped in politeness. No aggressive negotiating." },
+];
+
+// ── Job boards data ──
+type JobBoard = { icon: string; name: string; description: string; urlTemplate: string };
+
+const JOB_BOARDS: JobBoard[] = [
+  {
+    icon: "💼",
+    name: "Indeed Canada",
+    description: "Canada's #1 job site with millions of listings updated daily.",
+    urlTemplate: "https://ca.indeed.com/jobs?q={role}&l={city}",
+  },
+  {
+    icon: "🔗",
+    name: "LinkedIn Jobs",
+    description: "Professional network jobs + direct recruiter connections.",
+    urlTemplate: "https://www.linkedin.com/jobs/search/?keywords={role}&location={city}",
+  },
+  {
+    icon: "🍁",
+    name: "Job Bank (Government)",
+    description: "Official Government of Canada job board — free and trusted.",
+    urlTemplate: "https://www.jobbank.gc.ca/jobsearch/jobsearch?searchstring={role}&locationstring={city}",
+  },
+  {
+    icon: "🏢",
+    name: "Workopolis",
+    description: "Canadian-focused job board with curated postings.",
+    urlTemplate: "https://workopolis.com/jobsearch/find-jobs?ak={role}&l={city}",
+  },
+  {
+    icon: "🎯",
+    name: "Monster Canada",
+    description: "Global platform with strong Canadian employer presence.",
+    urlTemplate: "https://www.monster.ca/jobs/search/?q={role}&where={city}",
+  },
+  {
+    icon: "🏛️",
+    name: "Glassdoor",
+    description: "Jobs + salary data + company reviews by employees.",
+    urlTemplate: "https://www.glassdoor.ca/Job/jobs.htm?suggestCount=0&suggestChosen=false&clickSource=searchBtn&typedKeyword={role}&locT=C&locId=&jobType=",
+  },
+];
+
+function buildJobUrl(template: string, role: string, city: string): string {
+  return template
+    .replace("{role}", encodeURIComponent(role))
+    .replace("{city}", encodeURIComponent(city));
+}
+
+// ── ATS Score color ──
+function atsColor(score: number | undefined): string {
+  if (score === undefined) return "text-gray-400";
+  if (score >= 70) return "text-green-600";
+  if (score >= 50) return "text-amber-500";
+  return "text-red-500";
+}
+
 export default function DashboardPage() {
   const router = useRouter();
 
-  // "home" = show saved-resume panel (if any) + upload option
-  // "upload" = upload new resume flow
-  // "form"   = target-role / city form
-  const [view, setView] = useState<"home" | "upload" | "form">("home");
+  const [view, setView] = useState<"home" | "upload" | "form" | "dashboard">("home");
+  const [activeSection, setActiveSection] = useState<DashboardSection>("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [saved, setSaved] = useState<AnalysisResult | null>(null);
+  const [savedUpdatedAt, setSavedUpdatedAt] = useState<string | null>(null);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [resumeUrl, setResumeUrl] = useState("");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
@@ -80,37 +234,53 @@ export default function DashboardPage() {
   const [storageFailed, setStorageFailed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Load saved resume on mount (Supabase first, localStorage fallback) ──
+  // ── Checklist state ──
+  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const [openCategories, setOpenCategories] = useState<Set<string>>(
+    new Set(CHECKLIST_CATEGORIES.map((c) => c.id))
+  );
+
+  // ── Interview prep tab ──
+  const [interviewTab, setInterviewTab] = useState<"questions" | "tips" | "star">("questions");
+  const [openQuestion, setOpenQuestion] = useState<number | null>(null);
+
+  // ── Load saved resume on mount ──
   useEffect(() => {
     async function load() {
-      // 1. Show localStorage instantly (no flicker)
       const local = loadLocal();
       if (local) {
         setSaved(local);
         if (local.targetRole) setTargetRole(local.targetRole);
         if (local.city) setCity(local.city);
       }
-      // 2. Fetch from Supabase (cross-device, more reliable)
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         const { data } = await supabase
           .from("resumes")
-          .select("analysis")
+          .select("analysis, updated_at")
           .eq("user_id", user.id)
           .single();
         if (data?.analysis) {
           const r = data.analysis as AnalysisResult;
           setSaved(r);
-          saveLocal(r); // keep local cache in sync
+          saveLocal(r);
           if (r.targetRole) setTargetRole(r.targetRole);
           if (r.city) setCity(r.city);
+          if (data.updated_at) setSavedUpdatedAt(data.updated_at as string);
+          // Returning user with saved resume → go straight to dashboard
+          setView("dashboard");
         }
       } catch { /* fall back to localStorage silently */ }
     }
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Load checklist from localStorage ──
+  useEffect(() => {
+    setCheckedItems(loadChecklist());
   }, []);
 
   // ── File handling ──
@@ -180,17 +350,16 @@ export default function DashboardPage() {
       setAnalysis(data);
       if (!targetRole && data.targetJobTitles?.length) setTargetRole(data.targetJobTitles[0]);
 
-      // Save to Supabase + localStorage
       saveLocal(data);
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
+        const { data: { user: u2 } } = await supabase.auth.getUser();
+        if (u2) {
           await supabase.from("resumes").upsert(
-            { user_id: user.id, analysis: data, updated_at: new Date().toISOString() },
+            { user_id: u2.id, analysis: data, updated_at: new Date().toISOString() },
             { onConflict: "user_id" }
           );
         }
-      } catch { /* non-fatal — local cache is enough */ }
+      } catch { /* non-fatal */ }
 
       setView("form");
       setError(null);
@@ -219,7 +388,6 @@ export default function DashboardPage() {
         jobDescription: jobDescription.trim(),
       };
       saveLocal(updated);
-      // Persist updated preferences to Supabase in the background
       (async () => {
         try {
           const supabase = createClient();
@@ -242,7 +410,37 @@ export default function DashboardPage() {
     router.push(`/resume-results?${params.toString()}`);
   };
 
-  // ── Shared header ──
+  // ── Sign out ──
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  };
+
+  // ── Checklist helpers ──
+  const toggleCheck = (id: string) => {
+    setCheckedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      saveChecklist(next);
+      return next;
+    });
+  };
+
+  const toggleCategory = (id: string) => {
+    setOpenCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const completedCount = checkedItems.size;
+
+  // ── Shared header (used in upload/form/home views) ──
   const Header = () => (
     <header className="glass-morphism sticky top-0 z-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -251,12 +449,7 @@ export default function DashboardPage() {
           <span className="text-xl font-bold text-gray-900">Mapleins</span>
         </Link>
         <button
-          onClick={async () => {
-            const supabase = createClient();
-            await supabase.auth.signOut();
-            router.push("/");
-            router.refresh();
-          }}
+          onClick={handleSignOut}
           className="text-sm font-semibold text-gray-500 hover:text-[#166534] transition-colors px-3 py-1.5 rounded-lg hover:bg-green-50"
         >
           Sign out
@@ -283,10 +476,8 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* ── Saved resume card ── */}
           {saved && (
             <div className="rounded-2xl border border-green-200 bg-white shadow-sm overflow-hidden">
-              {/* Card header */}
               <div className="green-gradient px-5 py-4 flex items-center justify-between">
                 <div>
                   <p className="font-black text-white text-sm">
@@ -299,16 +490,16 @@ export default function DashboardPage() {
                 </div>
                 <button
                   onClick={async () => {
-                  clearLocal();
-                  setSaved(null);
-                  setTargetRole("");
-                  setCity("");
-                  try {
-                    const supabase = createClient();
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (user) await supabase.from("resumes").delete().eq("user_id", user.id);
-                  } catch { /* non-fatal */ }
-                }}
+                    clearLocal();
+                    setSaved(null);
+                    setTargetRole("");
+                    setCity("");
+                    try {
+                      const supabase = createClient();
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (user) await supabase.from("resumes").delete().eq("user_id", user.id);
+                    } catch { /* non-fatal */ }
+                  }}
                   className="text-green-200 hover:text-white text-xs font-semibold transition-colors"
                   title="Clear saved resume"
                 >
@@ -316,7 +507,6 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              {/* Roles preview */}
               {(saved.experienceByRole ?? []).length > 0 && (
                 <div className="px-5 pt-4 pb-2">
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Work experience</p>
@@ -338,7 +528,6 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* Skills preview */}
               {saved.skills?.filter(Boolean).length > 0 && (
                 <div className="px-5 pt-3 pb-4">
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Skills</p>
@@ -353,7 +542,6 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* Actions */}
               <div className="border-t border-gray-100 px-5 py-4 flex gap-3">
                 <Button
                   onClick={() => {
@@ -368,10 +556,7 @@ export default function DashboardPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    // Go straight to editor with saved data
-                    router.push("/editor");
-                  }}
+                  onClick={() => router.push("/editor")}
                   className="border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold rounded-xl px-4 text-sm"
                 >
                   ✏️ Edit
@@ -380,7 +565,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ── Upload new resume ── */}
           <div className={`rounded-2xl border ${saved ? "border-gray-200 bg-white/70" : "border-green-200 bg-white shadow-sm"} overflow-hidden`}>
             <button
               type="button"
@@ -404,7 +588,6 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Build from scratch */}
           <button
             type="button"
             onClick={() => router.push("/editor")}
@@ -423,7 +606,6 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-gradient-to-br from-[#f0fdf4] via-white to-[#f0f9ff]">
         <Header />
         <main className="max-w-xl mx-auto px-4 py-10 reveal-up">
-          {/* Step indicator */}
           <div className="flex items-center gap-2 mb-8">
             <div className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold green-gradient text-white shadow-md">1</div>
             <div className="h-0.5 flex-1 rounded bg-gray-200" />
@@ -447,7 +629,7 @@ export default function DashboardPage() {
           </div>
 
           <form onSubmit={handleUploadAndAnalyze} className="mt-7 space-y-5">
-            <label className={`group relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-200 ${resumeFile ? "border-[#166534] bg-green-50 shadow-sm soft-glow" : "border-gray-200 bg-white hover:border-[#166534] hover:bg-green-50"}`}>
+            <label className={`group relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-200 ${resumeFile ? "border-[#166534] bg-green-50 shadow-sm" : "border-gray-200 bg-white hover:border-[#166534] hover:bg-green-50"}`}>
               <div className="flex flex-col items-center gap-3">
                 {resumeFile ? (
                   <>
@@ -511,7 +693,7 @@ export default function DashboardPage() {
                 </Button>
                 <button
                   type="button"
-                  onClick={() => setView("home")}
+                  onClick={() => setView(saved ? "dashboard" : "home")}
                   className="w-full text-center text-xs text-gray-400 font-semibold hover:text-gray-600 transition-colors"
                 >
                   ← Back
@@ -525,154 +707,748 @@ export default function DashboardPage() {
   }
 
   // ── VIEW: Form (target role / city) ──
-  const activeAnalysis = analysis ?? saved;
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f0fdf4] via-white to-[#f0f9ff]">
-      <Header />
-      <main className="max-w-xl mx-auto px-4 py-10 reveal-up">
-        {/* Step indicator */}
-        <div className="flex items-center gap-2 mb-8">
-          <div className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold bg-green-100 text-[#166534]">1</div>
-          <div className="h-0.5 flex-1 rounded bg-[#166534]" />
-          <div className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold green-gradient text-white shadow-md">2</div>
-        </div>
-
-        <h1 className="text-3xl font-black text-gray-900 leading-tight">
-          Almost there —<br />
-          <span className="text-gradient">target your role</span>
-        </h1>
-        <p className="mt-3 text-gray-500 leading-relaxed text-sm">
-          We&apos;ll rebuild your resume around that exact role and city, inject the right ATS keywords, and surface 12–15 best-matched Canadian jobs.
-        </p>
-
-        {storageFailed && (
-          <div className="mt-5 flex items-start gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-200 text-amber-800 text-sm">
-            <span className="text-lg mt-0.5">⚠</span>
-            <span>Resume analyzed but we couldn&apos;t save a copy. You can still download your tailored PDF this session.</span>
-          </div>
-        )}
-
-        {activeAnalysis && (
-          <div className="mt-5 rounded-2xl overflow-hidden border border-green-200 shadow-sm">
-            <div className="green-gradient px-5 py-4">
-              <p className="font-bold text-white text-sm">
-                ✓ Resume ready — {activeAnalysis.name && activeAnalysis.name !== "Your Name" ? `${activeAnalysis.name}, we` : "We"}&apos;ve found your strengths
-              </p>
-              <p className="mt-1 text-green-100 text-xs leading-relaxed">
-                {activeAnalysis.whyTheseJobs || "Strong signals detected. Point your resume at the right role."}
-              </p>
-            </div>
-            {(activeAnalysis.targetJobTitles ?? []).length > 0 && (
-              <div className="bg-white px-5 py-4">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">Best-fit roles we spotted</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {activeAnalysis.targetJobTitles.slice(0, 5).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setTargetRole(t)}
-                      className="text-xs px-3 py-1.5 rounded-xl bg-green-50 border border-green-200 text-[#166534] font-semibold hover:bg-green-100 transition-colors"
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-2.5 text-[11px] text-gray-400">Tap to auto-fill, or type your own below.</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div>
-            <Label htmlFor="targetRole" className="text-sm font-semibold text-gray-700">Target role <span className="text-red-400">*</span></Label>
-            <input
-              id="targetRole"
-              type="text"
-              value={targetRole}
-              onChange={(e) => setTargetRole(e.target.value)}
-              placeholder="e.g. Data Analyst, Store Supervisor, Software Developer…"
-              maxLength={120}
-              className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent transition-all"
-            />
+  if (view === "form") {
+    const activeAnalysis = analysis ?? saved;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#f0fdf4] via-white to-[#f0f9ff]">
+        <Header />
+        <main className="max-w-xl mx-auto px-4 py-10 reveal-up">
+          <div className="flex items-center gap-2 mb-8">
+            <div className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold bg-green-100 text-[#166534]">1</div>
+            <div className="h-0.5 flex-1 rounded bg-[#166534]" />
+            <div className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold green-gradient text-white shadow-md">2</div>
           </div>
 
-          <div>
-            <Label htmlFor="city" className="text-sm font-semibold text-gray-700">City or province <span className="text-red-400">*</span></Label>
-            <input
-              id="city"
-              type="text"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="e.g. Toronto, ON · Vancouver, BC · Prince Albert, SK…"
-              maxLength={80}
-              className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent transition-all"
-            />
-          </div>
+          <h1 className="text-3xl font-black text-gray-900 leading-tight">
+            Almost there —<br />
+            <span className="text-gradient">target your role</span>
+          </h1>
+          <p className="mt-3 text-gray-500 leading-relaxed text-sm">
+            We&apos;ll rebuild your resume around that exact role and city, inject the right ATS keywords, and surface 12–15 best-matched Canadian jobs.
+          </p>
 
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <Label className="text-sm font-semibold text-gray-700">
-                Job description <span className="text-gray-400 font-normal text-xs">(optional — boosts ATS match)</span>
-              </Label>
-              <button type="button" onClick={() => setShowJDInput((v) => !v)} className="text-xs font-semibold text-[#166534] hover:underline">
-                {showJDInput ? "Hide ▲" : "Paste job posting ▼"}
-              </button>
-            </div>
-            {showJDInput && (
-              <div>
-                <textarea
-                  value={jobDescription}
-                  onChange={(e) => setJobDescription(e.target.value)}
-                  placeholder="Paste the job posting here — AI will extract keywords and weave them into your resume."
-                  rows={4}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent resize-none transition-all"
-                />
-                {jobDescription.trim().length > 50 && (
-                  <p className="mt-1.5 text-xs font-semibold text-[#166534]">✓ Keywords will be extracted and injected automatically.</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <Label className="text-sm font-semibold text-gray-700">Immigration status <span className="text-red-400">*</span></Label>
-            <Select value={immigrationStatus} onValueChange={setImmigrationStatus}>
-              <SelectTrigger className="mt-1.5 rounded-xl border-gray-200 shadow-sm">
-                <SelectValue placeholder="Select your status" />
-              </SelectTrigger>
-              <SelectContent>
-                {IMMIGRATION_STATUSES.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-100 text-red-700 px-4 py-3 text-sm font-medium">
-              <span>⚠</span> {error}
+          {storageFailed && (
+            <div className="mt-5 flex items-start gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-200 text-amber-800 text-sm">
+              <span className="text-lg mt-0.5">⚠</span>
+              <span>Resume analyzed but we couldn&apos;t save a copy. You can still download your tailored PDF this session.</span>
             </div>
           )}
 
-          <div className="flex gap-3 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => { setView(saved ? "home" : "upload"); setStorageFailed(false); setError(null); }}
-              className="rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold"
+          {activeAnalysis && (
+            <div className="mt-5 rounded-2xl overflow-hidden border border-green-200 shadow-sm">
+              <div className="green-gradient px-5 py-4">
+                <p className="font-bold text-white text-sm">
+                  ✓ Resume ready — {activeAnalysis.name && activeAnalysis.name !== "Your Name" ? `${activeAnalysis.name}, we` : "We"}&apos;ve found your strengths
+                </p>
+                <p className="mt-1 text-green-100 text-xs leading-relaxed">
+                  {activeAnalysis.whyTheseJobs || "Strong signals detected. Point your resume at the right role."}
+                </p>
+              </div>
+              {(activeAnalysis.targetJobTitles ?? []).length > 0 && (
+                <div className="bg-white px-5 py-4">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">Best-fit roles we spotted</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {activeAnalysis.targetJobTitles.slice(0, 5).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setTargetRole(t)}
+                        className="text-xs px-3 py-1.5 rounded-xl bg-green-50 border border-green-200 text-[#166534] font-semibold hover:bg-green-100 transition-colors"
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2.5 text-[11px] text-gray-400">Tap to auto-fill, or type your own below.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <div>
+              <Label htmlFor="targetRole" className="text-sm font-semibold text-gray-700">Target role <span className="text-red-400">*</span></Label>
+              <input
+                id="targetRole"
+                type="text"
+                value={targetRole}
+                onChange={(e) => setTargetRole(e.target.value)}
+                placeholder="e.g. Data Analyst, Store Supervisor, Software Developer…"
+                maxLength={120}
+                className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="city" className="text-sm font-semibold text-gray-700">City or province <span className="text-red-400">*</span></Label>
+              <input
+                id="city"
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="e.g. Toronto, ON · Vancouver, BC · Prince Albert, SK…"
+                maxLength={80}
+                className="mt-1.5 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <Label className="text-sm font-semibold text-gray-700">
+                  Job description <span className="text-gray-400 font-normal text-xs">(optional — boosts ATS match)</span>
+                </Label>
+                <button type="button" onClick={() => setShowJDInput((v) => !v)} className="text-xs font-semibold text-[#166534] hover:underline">
+                  {showJDInput ? "Hide ▲" : "Paste job posting ▼"}
+                </button>
+              </div>
+              {showJDInput && (
+                <div>
+                  <textarea
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    placeholder="Paste the job posting here — AI will extract keywords and weave them into your resume."
+                    rows={4}
+                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent resize-none transition-all"
+                  />
+                  {jobDescription.trim().length > 50 && (
+                    <p className="mt-1.5 text-xs font-semibold text-[#166534]">✓ Keywords will be extracted and injected automatically.</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label className="text-sm font-semibold text-gray-700">Immigration status <span className="text-red-400">*</span></Label>
+              <Select value={immigrationStatus} onValueChange={setImmigrationStatus}>
+                <SelectTrigger className="mt-1.5 rounded-xl border-gray-200 shadow-sm">
+                  <SelectValue placeholder="Select your status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {IMMIGRATION_STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {error && (
+              <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-100 text-red-700 px-4 py-3 text-sm font-medium">
+                <span>⚠</span> {error}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => { setView(saved ? "dashboard" : "upload"); setStorageFailed(false); setError(null); }}
+                className="rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold"
+              >
+                ← Back
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 green-gradient hover:opacity-90 text-white py-6 text-base font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all"
+              >
+                Build My ATS Resume →
+              </Button>
+            </div>
+          </form>
+        </main>
+      </div>
+    );
+  }
+
+  // ── VIEW: Dashboard ──
+  const dashSaved = saved;
+  const displayRole = dashSaved?.targetRole ?? targetRole ?? "your target role";
+  const displayCity = dashSaved?.city ?? city ?? "Canada";
+
+  const navItems: { id: DashboardSection; icon: string; label: string }[] = [
+    { id: "overview", icon: "🏠", label: "Overview" },
+    { id: "resume", icon: "📄", label: "My Resume" },
+    { id: "interview", icon: "🎤", label: "Interview Prep" },
+    { id: "checklist", icon: "✅", label: "Job Checklist" },
+    { id: "jobsearch", icon: "🔍", label: "Job Search" },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#f0fdf4] via-white to-[#f0f9ff] flex flex-col">
+      {/* ── Dashboard top header ── */}
+      <header className="glass-morphism sticky top-0 z-50 border-b border-gray-100">
+        <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+          {/* Left: Logo + hamburger (mobile) */}
+          <div className="flex items-center gap-3">
+            <button
+              className="sm:hidden p-1.5 rounded-lg hover:bg-green-50 transition-colors"
+              onClick={() => setSidebarOpen((v) => !v)}
+              aria-label="Toggle sidebar"
             >
-              ← Back
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1 green-gradient hover:opacity-90 text-white py-6 text-base font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all"
-            >
-              Build My ATS Resume →
-            </Button>
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <div className="w-8 h-8 green-gradient rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md">M</div>
+              <span className="text-xl font-bold text-gray-900 hidden sm:block">Mapleins</span>
+            </Link>
           </div>
-        </form>
-      </main>
+
+          {/* Right: User info + sign out */}
+          <div className="flex items-center gap-3">
+            {dashSaved?.name && (
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-semibold text-gray-800 leading-tight">{dashSaved.name}</p>
+                {dashSaved.email && <p className="text-xs text-gray-400 leading-tight">{dashSaved.email}</p>}
+              </div>
+            )}
+            <div className="w-8 h-8 green-gradient rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm flex-shrink-0">
+              {dashSaved?.name ? dashSaved.name[0].toUpperCase() : "U"}
+            </div>
+            <button
+              onClick={handleSignOut}
+              className="text-sm font-semibold text-gray-500 hover:text-[#166534] transition-colors px-3 py-1.5 rounded-lg hover:bg-green-50 hidden sm:block"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex flex-1 relative">
+        {/* ── Sidebar overlay (mobile) ── */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/30 z-30 sm:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* ── Sidebar ── */}
+        <aside
+          className={`
+            fixed sm:sticky top-[57px] sm:top-0 left-0 h-[calc(100vh-57px)] sm:h-auto
+            w-60 bg-white border-r border-gray-100 flex flex-col z-40
+            transition-transform duration-200
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"}
+            sm:flex
+          `}
+        >
+          <nav className="flex-1 py-4 overflow-y-auto">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => { setActiveSection(item.id); setSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors text-left ${
+                  activeSection === item.id
+                    ? "bg-green-50 text-[#166534] border-r-2 border-[#166534]"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <span className="text-base">{item.icon}</span>
+                {item.label}
+              </button>
+            ))}
+          </nav>
+          <div className="border-t border-gray-100 p-4">
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center gap-3 px-2 py-2 text-sm font-semibold text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <span>🚪</span> Sign out
+            </button>
+          </div>
+        </aside>
+
+        {/* ── Main content ── */}
+        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-6 pb-24 sm:pb-6 overflow-y-auto">
+
+          {/* ── SECTION: Overview ── */}
+          {activeSection === "overview" && (
+            <div className="max-w-3xl mx-auto space-y-6">
+              {/* Welcome card */}
+              <div className="green-gradient rounded-2xl p-6 text-white shadow-lg">
+                <h1 className="text-2xl font-black leading-tight">
+                  Welcome back, {dashSaved?.name?.split(" ")[0] ?? "there"} 👋
+                </h1>
+                <p className="mt-1 text-green-100 text-sm">
+                  {displayRole !== "your target role" && displayCity !== "Canada"
+                    ? `Targeting ${displayRole} roles in ${displayCity}`
+                    : "Your Canadian job dashboard is ready."}
+                </p>
+                {savedUpdatedAt && (
+                  <p className="mt-2 text-green-200 text-xs">
+                    Last updated: {new Date(savedUpdatedAt).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
+                  </p>
+                )}
+              </div>
+
+              {/* Stat cards */}
+              <div className="grid grid-cols-3 gap-3">
+                {/* ATS Score */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col items-center text-center">
+                  <p className={`text-3xl font-black ${atsColor(dashSaved?.atsScore)}`}>
+                    {dashSaved?.atsScore !== undefined ? dashSaved.atsScore : "--"}
+                  </p>
+                  <p className="text-xs text-gray-400 font-semibold mt-1">ATS Score</p>
+                  {dashSaved?.atsScore !== undefined && (
+                    <div className="mt-2 w-full bg-gray-100 rounded-full h-1.5">
+                      <div
+                        className={`h-1.5 rounded-full ${dashSaved.atsScore >= 70 ? "bg-green-500" : dashSaved.atsScore >= 50 ? "bg-amber-400" : "bg-red-400"}`}
+                        style={{ width: `${Math.min(100, dashSaved.atsScore)}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Checklist Progress */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col items-center text-center">
+                  <p className="text-3xl font-black text-[#166534]">{completedCount}</p>
+                  <p className="text-xs text-gray-400 font-semibold mt-1">/ {TOTAL_CHECKLIST_ITEMS} complete</p>
+                  <div className="mt-2 w-full bg-gray-100 rounded-full h-1.5">
+                    <div
+                      className="h-1.5 rounded-full bg-green-500 transition-all"
+                      style={{ width: `${(completedCount / TOTAL_CHECKLIST_ITEMS) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Experience */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col items-center text-center">
+                  <p className="text-3xl font-black text-gray-800">
+                    {dashSaved?.yearsOfExperience ?? "--"}
+                  </p>
+                  <p className="text-xs text-gray-400 font-semibold mt-1">
+                    {dashSaved?.yearsOfExperience ? "years exp." : "Experience"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick actions */}
+              <div>
+                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Quick Actions</h2>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => router.push("/editor")}
+                    className="flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:border-green-300 hover:bg-green-50 transition-all text-left group"
+                  >
+                    <span className="text-2xl">✏️</span>
+                    <div>
+                      <p className="text-sm font-bold text-gray-800 group-hover:text-[#166534]">Edit Resume</p>
+                      <p className="text-xs text-gray-400">Open the editor</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => router.push(`/resume-results?jobType=${encodeURIComponent(displayRole)}`)}
+                    className="flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:border-green-300 hover:bg-green-50 transition-all text-left group"
+                  >
+                    <span className="text-2xl">⬇</span>
+                    <div>
+                      <p className="text-sm font-bold text-gray-800 group-hover:text-[#166534]">Download PDF</p>
+                      <p className="text-xs text-gray-400">Get tailored resume</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setView("form")}
+                    className="flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:border-green-300 hover:bg-green-50 transition-all text-left group"
+                  >
+                    <span className="text-2xl">🎯</span>
+                    <div>
+                      <p className="text-sm font-bold text-gray-800 group-hover:text-[#166534]">Retarget Role</p>
+                      <p className="text-xs text-gray-400">Change job target</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setView("upload")}
+                    className="flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:border-green-300 hover:bg-green-50 transition-all text-left group"
+                  >
+                    <span className="text-2xl">📤</span>
+                    <div>
+                      <p className="text-sm font-bold text-gray-800 group-hover:text-[#166534]">New Resume</p>
+                      <p className="text-xs text-gray-400">Upload a new PDF</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Suggested sectors */}
+              {(dashSaved?.suggestedSectors ?? []).length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                  <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Suggested Sectors</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {dashSaved!.suggestedSectors.map((s) => (
+                      <span key={s} className="text-xs px-3 py-1.5 rounded-full bg-green-50 border border-green-200 text-[#166534] font-semibold">{s}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── SECTION: My Resume ── */}
+          {activeSection === "resume" && (
+            <div className="max-w-3xl mx-auto space-y-5">
+              <h1 className="text-2xl font-black text-gray-900">📄 My Resume</h1>
+
+              {!dashSaved ? (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
+                  <p className="text-gray-400 font-semibold mb-4">No resume saved yet.</p>
+                  <Button onClick={() => setView("upload")} className="green-gradient text-white font-bold rounded-xl px-6">
+                    Upload Resume →
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  {/* Identity card */}
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="green-gradient px-6 py-5">
+                      <h2 className="text-xl font-black text-white">{dashSaved.name || "—"}</h2>
+                      <div className="flex flex-wrap gap-3 mt-1.5">
+                        {dashSaved.email && <span className="text-green-100 text-sm">{dashSaved.email}</span>}
+                        {dashSaved.phone && <span className="text-green-100 text-sm">{dashSaved.phone}</span>}
+                      </div>
+                      {dashSaved.targetRole && (
+                        <p className="mt-2 text-white text-sm font-semibold opacity-90">
+                          🎯 {dashSaved.targetRole}{dashSaved.city ? ` · ${dashSaved.city}` : ""}
+                        </p>
+                      )}
+                    </div>
+                    {dashSaved.summary && (
+                      <div className="px-6 py-4 border-b border-gray-50">
+                        <p className="text-sm text-gray-600 leading-relaxed">{dashSaved.summary}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Experience */}
+                  {(dashSaved.experienceByRole ?? []).length > 0 && (
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Work Experience</h3>
+                      <div className="space-y-4">
+                        {(dashSaved.experienceByRole ?? []).map((exp, i) => (
+                          <div key={i} className="pb-4 border-b border-gray-50 last:border-0 last:pb-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="font-bold text-gray-800 text-sm">{exp.role}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">{exp.company}{exp.dates ? ` · ${exp.dates}` : ""}</p>
+                              </div>
+                            </div>
+                            {exp.bullets.length > 0 && (
+                              <p className="mt-2 text-xs text-gray-600 leading-relaxed">{exp.bullets[0]}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Skills */}
+                  {dashSaved.skills.filter(Boolean).length > 0 && (
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Skills</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {dashSaved.skills.filter(Boolean).map((s) => (
+                          <span key={s} className="text-xs px-3 py-1.5 rounded-full bg-green-50 border border-green-200 text-[#166534] font-semibold">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Education */}
+                  {(dashSaved.education ?? []).length > 0 && (
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Education</h3>
+                      <ul className="space-y-1.5">
+                        {(dashSaved.education ?? []).map((e, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
+                            {e}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Certifications */}
+                  {(dashSaved.certifications ?? []).length > 0 && (
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Certifications</h3>
+                      <ul className="space-y-1.5">
+                        {(dashSaved.certifications ?? []).map((c, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
+                            {c}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-3">
+                    <Button onClick={() => router.push("/editor")} className="green-gradient text-white font-bold rounded-xl px-5">
+                      ✏️ Edit Resume
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => router.push(`/resume-results?jobType=${encodeURIComponent(displayRole)}`)}
+                      className="border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold rounded-xl px-5"
+                    >
+                      ⬇ Download PDF
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setView("form")}
+                      className="border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold rounded-xl px-5"
+                    >
+                      🎯 Retarget
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setView("upload")}
+                      className="border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold rounded-xl px-5"
+                    >
+                      📤 Upload New
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── SECTION: Interview Prep ── */}
+          {activeSection === "interview" && (
+            <div className="max-w-3xl mx-auto space-y-5">
+              <h1 className="text-2xl font-black text-gray-900">🎤 Interview Prep</h1>
+
+              {/* Tabs */}
+              <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+                {(["questions", "tips", "star"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setInterviewTab(tab)}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-colors ${
+                      interviewTab === tab
+                        ? "bg-white text-[#166534] shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    {tab === "questions" ? "Common Questions" : tab === "tips" ? "Canadian Tips" : "STAR Method"}
+                  </button>
+                ))}
+              </div>
+
+              {/* Common Questions */}
+              {interviewTab === "questions" && (
+                <div className="space-y-2">
+                  {INTERVIEW_QUESTIONS.map((q, i) => (
+                    <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                      <button
+                        onClick={() => setOpenQuestion(openQuestion === i ? null : i)}
+                        className="w-full flex items-center justify-between px-5 py-4 text-left gap-3"
+                      >
+                        <p className="text-sm font-semibold text-gray-800">{q.question}</p>
+                        <svg
+                          className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${openQuestion === i ? "rotate-180" : ""}`}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      {openQuestion === i && (
+                        <div className="px-5 pb-4 border-t border-gray-50">
+                          <p className="text-sm text-gray-600 leading-relaxed pt-3">💡 {q.tip}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Canadian Tips */}
+              {interviewTab === "tips" && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {CANADIAN_TIPS.map((tip, i) => (
+                    <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                      <div className="text-2xl mb-2">{tip.icon}</div>
+                      <p className="text-sm text-gray-700 leading-relaxed">{tip.tip}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* STAR Method */}
+              {interviewTab === "star" && (
+                <div className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {[
+                      { letter: "S", label: "Situation", desc: "Set the scene — where were you, what was the context?", color: "bg-blue-50 border-blue-200 text-blue-800" },
+                      { letter: "T", label: "Task", desc: "What was your specific responsibility or challenge?", color: "bg-amber-50 border-amber-200 text-amber-800" },
+                      { letter: "A", label: "Action", desc: "What did YOU specifically do? Focus on your contribution.", color: "bg-green-50 border-green-200 text-green-800" },
+                      { letter: "R", label: "Result", desc: "What was the outcome? Use numbers whenever possible.", color: "bg-purple-50 border-purple-200 text-purple-800" },
+                    ].map((item) => (
+                      <div key={item.letter} className={`rounded-2xl border p-5 ${item.color}`}>
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="text-2xl font-black">{item.letter}</span>
+                          <span className="font-bold text-sm">{item.label}</span>
+                        </div>
+                        <p className="text-sm leading-relaxed opacity-80">{item.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Sample STAR answer */}
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Sample STAR Answer</h3>
+                    <p className="text-sm font-semibold text-gray-700 mb-3">Q: &quot;Tell me about a time you improved a process.&quot;</p>
+                    <div className="space-y-2.5">
+                      <p className="text-sm text-gray-600 leading-relaxed"><span className="font-bold text-blue-700">S:</span> In my previous role as a logistics coordinator, our order tracking was done manually via spreadsheets, causing frequent errors and delays.</p>
+                      <p className="text-sm text-gray-600 leading-relaxed"><span className="font-bold text-amber-700">T:</span> I was tasked with reducing order errors by 20% within one quarter.</p>
+                      <p className="text-sm text-gray-600 leading-relaxed"><span className="font-bold text-green-700">A:</span> I researched affordable tracking tools, proposed a solution to management, and led a 2-week pilot with the team, training 8 staff members.</p>
+                      <p className="text-sm text-gray-600 leading-relaxed"><span className="font-bold text-purple-700">R:</span> Order errors dropped by 35% in the first month, saving approximately $12,000 in rework costs per quarter.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── SECTION: Job Checklist ── */}
+          {activeSection === "checklist" && (
+            <div className="max-w-3xl mx-auto space-y-5">
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-black text-gray-900">✅ Job Checklist</h1>
+                <span className="text-sm font-semibold text-gray-500">{completedCount} / {TOTAL_CHECKLIST_ITEMS}</span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-gray-700">Overall Progress</span>
+                  <span className="text-sm font-bold text-[#166534]">{Math.round((completedCount / TOTAL_CHECKLIST_ITEMS) * 100)}%</span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-3">
+                  <div
+                    className="h-3 rounded-full green-gradient transition-all duration-300"
+                    style={{ width: `${(completedCount / TOTAL_CHECKLIST_ITEMS) * 100}%` }}
+                  />
+                </div>
+                {completedCount === TOTAL_CHECKLIST_ITEMS && (
+                  <p className="mt-3 text-sm font-bold text-[#166534] text-center">🎉 All done! You&apos;re job-search ready.</p>
+                )}
+              </div>
+
+              {/* Categories */}
+              {CHECKLIST_CATEGORIES.map((cat) => {
+                const catCompleted = cat.items.filter((item) => checkedItems.has(item.id)).length;
+                const isOpen = openCategories.has(cat.id);
+                return (
+                  <div key={cat.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <button
+                      onClick={() => toggleCategory(cat.id)}
+                      className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-gray-800">{cat.title}</span>
+                        <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                          {catCompleted}/{cat.items.length}
+                        </span>
+                      </div>
+                      <svg
+                        className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {isOpen && (
+                      <div className="border-t border-gray-50 divide-y divide-gray-50">
+                        {cat.items.map((item) => (
+                          <label
+                            key={item.id}
+                            className="flex items-start gap-3 px-5 py-3.5 hover:bg-gray-50 cursor-pointer transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checkedItems.has(item.id)}
+                              onChange={() => toggleCheck(item.id)}
+                              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#166534] focus:ring-[#166534] flex-shrink-0 accent-[#166534]"
+                            />
+                            <span className={`text-sm leading-relaxed ${checkedItems.has(item.id) ? "line-through text-gray-400" : "text-gray-700"}`}>
+                              {item.label}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── SECTION: Job Search ── */}
+          {activeSection === "jobsearch" && (
+            <div className="max-w-3xl mx-auto space-y-5">
+              <div>
+                <h1 className="text-2xl font-black text-gray-900">🔍 Job Search</h1>
+                <p className="mt-1 text-sm text-gray-500">
+                  Top job boards for <span className="font-semibold text-gray-700">{displayRole}</span> in <span className="font-semibold text-gray-700">{displayCity}</span>
+                </p>
+              </div>
+
+              {/* Job board cards */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                {JOB_BOARDS.map((board) => (
+                  <div key={board.name} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl flex-shrink-0">{board.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-gray-800 text-sm">{board.name}</p>
+                        <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{board.description}</p>
+                      </div>
+                    </div>
+                    <a
+                      href={buildJobUrl(board.urlTemplate, displayRole, displayCity)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-green-50 border border-green-200 text-[#166534] text-sm font-bold hover:bg-green-100 transition-colors"
+                    >
+                      Search → <span className="text-xs opacity-70">↗</span>
+                    </a>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pro tip */}
+              <div className="bg-amber-50 rounded-2xl border border-amber-200 p-5 flex items-start gap-3">
+                <span className="text-xl flex-shrink-0">💡</span>
+                <div>
+                  <p className="text-sm font-bold text-amber-800">Pro tip</p>
+                  <p className="text-sm text-amber-700 mt-0.5">Apply within 48 hours of posting — Canadian employers move fast and often close roles early.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </main>
+      </div>
+
+      {/* ── Mobile bottom tab bar ── */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-30 flex">
+        {navItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => setActiveSection(item.id)}
+            className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors ${
+              activeSection === item.id ? "text-[#166534]" : "text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            <span className="text-lg leading-none">{item.icon}</span>
+            <span className="text-[10px] font-semibold leading-none">{item.label.split(" ").pop()}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
