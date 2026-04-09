@@ -33,6 +33,13 @@ export type ParsedResume = {
   certifications?: string[];
   /** Total years of professional experience, extracted by AI from dates */
   yearsOfExperience?: number;
+  /** ATS analysis returned by AI after rewrite */
+  atsAnalysis?: {
+    score?: number;
+    keywordMatch?: number;
+    strengths?: string[];
+    improvements?: string[];
+  };
 };
 
 /** Fallback when parsing fails or no resume uploaded */

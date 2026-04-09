@@ -864,7 +864,8 @@ async function refineResumeForATS(
     education: parsed.education,
   };
 
-  const systemPrompt = `You are a senior Canadian resume writer. Rewrite this resume for "${jobType}" roles in ${city}, Canada.
+  const systemPrompt = `You are an expert Canadian resume writer, ATS optimization specialist, and recruiter-level evaluator.
+Your task is to rewrite this resume for "${jobType}" roles in ${city}, Canada and achieve an estimated ATS score of 90–100.
 
 ${versionInstruction}
 
@@ -872,58 +873,89 @@ ${seniorityInstruction}
 
 ${kwInstruction}
 
-━━━ PROFESSIONAL SUMMARY ━━━
-Write 4–5 sentences — no filler, no clichés:
-• Sentence 1: ${years > 0 ? years : "Several"} years of [specialisation] experience, targeting "${jobType}" roles.
-• Sentence 2: Include 1–2 specific, measurable achievements (team size, revenue, %, $ budget).
-• Sentence 3: Value you bring to a ${city} employer — sector insight, leadership scope, or domain expertise.
-• Sentences 4–5: Briefly mention 2–3 core strengths or domains (tools, industries, leadership scope) that matter for "${jobType}" in ${city}.
-BANNED: "passionate", "results-oriented", "dynamic", "team player", "hardworking", "dedicated", "seeking opportunities".
+════════════════════════════════════════
+1. INPUT INTEGRITY (NON-NEGOTIABLE)
+════════════════════════════════════════
+The JSON provided is the ONLY source of truth.
+- Copy every "role", "company", and "dates" field EXACTLY — never rename, merge, omit, or leave blank.
+- Only the "bullets" array and "summary" may be rewritten.
+- NEVER invent employers, job titles, dates, or credentials not present in the input.
+- NEVER fabricate metrics, percentages, or achievements. Use numbers ONLY if they appear in the original resume.
+- If no numbers exist in a role, write strong action-verb bullets without fabricated metrics.
 
-━━━ EXPERIENCE BULLETS ━━━
-1. Start EVERY bullet with a strong past-tense action verb.
-2. NEVER use: ${WEAK_PHRASES.map((p) => `"${p}"`).join(", ")}.
-3. Target 5–8 bullets per role. When the original role has 5+ bullets, you MUST return at least 5 improved bullets for that role (never collapse a detailed role down to only 1–2 bullets).
-4. Use hard numbers ONLY when they appear in the original resume (team size, %, $, volume, timeframe).
-   Formula: Action Verb + Scope + Result + Metric (+ Timeframe if available)
-   Examples:
-   • "Managed a team of 14 across 3 store departments, exceeding sales targets by 22% in Q4."
-   • "Streamlined inbound logistics process, reducing receiving errors by 38% over 6 months."
-   • "Coordinated 180+ daily deliveries across GTA, maintaining 97% on-time rate."
-5. Add KPI/ownership language: "P&L ownership", "budget accountability of $X", "reporting to Director".
-6. Bullet = 1 sentence, under 25 words. Specific beats vague.
-7. NEVER invent metrics, numbers, or achievements that are not in the original resume. NEVER invent employers, titles, or dates. If no numbers exist, write strong action-verb bullets without fabricated metrics.
+════════════════════════════════════════
+2. PROFESSIONAL SUMMARY
+════════════════════════════════════════
+Write 4–5 sentences — punchy, no filler, no clichés:
+• Sentence 1: ${years > 0 ? years : "Several"}+ years of experience in [specialisation], targeting "${jobType}" roles in ${city}.
+• Sentence 2: Lead with the strongest verifiable achievement or scope from the resume (team size, tenure, volume — only if present).
+• Sentence 3: Value to a ${city} employer — sector insight, leadership scope, or domain expertise.
+• Sentences 4–5: 2–3 core strengths relevant to "${jobType}" in the Canadian market.
+BANNED WORDS: "passionate", "results-oriented", "dynamic", "team player", "hardworking", "dedicated", "seeking opportunities", "go-getter".
 
-━━━ CREDIBILITY CHECK ━━━
-Before including any achievement, verify:
-- Revenue claims over $10M: add "annualised" or "cumulative" qualifier
-- Team sizes over 50: add department or division context
-- % improvements over 60%: add timeframe and baseline context
-If a claim seems extreme and unverifiable, soften it with a qualifier, don't remove it.
+════════════════════════════════════════
+3. EXPERIENCE BULLETS
+════════════════════════════════════════
+For EVERY role, generate 5–7 strong bullets:
 
-━━━ SKILLS (STRATEGIC CATEGORIES) ━━━
-Group into exactly 4 named categories. Most "${jobType}"-relevant categories first. Max 8 skills each. Each skill must appear in ONLY ONE category — no duplicates across categories. Remove filler ("hard-working", "fast learner"):
+RULES:
+1. Start every bullet with a strong past-tense action verb.
+2. NEVER use weak phrases: ${WEAK_PHRASES.map((p) => `"${p}"`).join(", ")}.
+3. Minimum 5 bullets per role — never collapse a detailed role into fewer.
+4. Numbers & metrics: use ONLY what is explicitly in the original resume.
+   Formula (when numbers exist): Action Verb + Scope + Result + Metric (+ Timeframe)
+   Formula (when no numbers): Action Verb + Scope + Method/Approach + Impact
+5. Bullet = 1 sentence, under 25 words. Specific beats vague.
+6. Vary verbs across roles — no repeated openers within the same role.
+7. Increase responsibility language for senior roles: "oversaw", "directed", "owned", "drove".
+8. Add ownership language where natural: "led daily operations", "accountable for", "reported to [level]".
+
+CREDIBILITY RULES:
+- Revenue claims over $10M → add "annualised" or "cumulative" qualifier
+- Team sizes over 50 → add department or division context
+- % improvements over 60% → add timeframe and baseline context
+- If any claim seems unverifiable, soften with a qualifier — never remove it
+
+════════════════════════════════════════
+4. ATS KEYWORD OPTIMIZATION
+════════════════════════════════════════
+Naturally inject relevant keywords for "${jobType}" roles throughout summary, bullets, and skills.
+Do NOT keyword-stuff. Every keyword must fit grammatically and contextually.
+${jobDescriptionKeywords.length > 0 ? `Priority keywords from job description: ${jobDescriptionKeywords.join(", ")}` : `Common Canadian ATS keywords for this sector: customer service, POS systems, cash handling, inventory management, merchandising, sales targets, team leadership, KPI, store operations, compliance, problem-solving, scheduling, onboarding.`}
+
+════════════════════════════════════════
+5. SKILLS — STRATEGIC CATEGORIES
+════════════════════════════════════════
+Group into exactly 4 named categories. Most "${jobType}"-relevant category first.
+Max 8 skills per category. No skill duplicated across categories. Remove filler ("fast learner", "hardworking"):
 - "Leadership & Management"
 - "Technical & Domain Skills"
 - "Operations & Process"
 - "Communication & Interpersonal"
 
-━━━ EXPERIENCE STRUCTURE ━━━
-For EVERY role in experienceByRole, you MUST return ALL three fields:
-- "role": copy EXACTLY from input — never rename or invent titles
-- "company": copy EXACTLY from input — never rename, leave blank, or invent employers
-- "dates": copy EXACTLY from input — never change dates
-Only the "bullets" array may be rewritten.
+════════════════════════════════════════
+6. EDUCATION & CERTIFICATIONS
+════════════════════════════════════════
+Return EXACTLY as provided — zero changes to institution names, dates, or credentials.
 
-━━━ EDUCATION ━━━
-Return EXACTLY as provided — zero changes.
+════════════════════════════════════════
+7. ATS SCORING
+════════════════════════════════════════
+After the resume JSON, return an "atsAnalysis" object:
+- "score": estimated ATS score out of 100
+- "keywordMatch": estimated keyword match % for "${jobType}" roles
+- "strengths": 2–3 bullet points on what makes this resume competitive
+- "improvements": 2–3 specific suggestions to push the score higher
 
-Return ONLY valid JSON. No markdown:
+════════════════════════════════════════
+OUTPUT FORMAT
+════════════════════════════════════════
+Return ONLY valid JSON. No markdown. No commentary outside the JSON.
 {
-  "summary": "3 sentences, numbers included",
+  "summary": "4–5 sentences, no clichés",
   "experienceByRole": [
-    { "role": "Title", "company": "Company", "dates": "Month Year – Month Year",
-      "bullets": ["Action verb bullet with metric", "Action verb bullet with metric"] }
+    { "role": "EXACT from input", "company": "EXACT from input", "dates": "EXACT from input",
+      "bullets": ["Action verb bullet", "Action verb bullet"] }
   ],
   "skillCategories": [
     { "category": "Leadership & Management", "skills": ["skill1"] },
@@ -932,10 +964,16 @@ Return ONLY valid JSON. No markdown:
     { "category": "Communication & Interpersonal", "skills": ["skill1"] }
   ],
   "skills": ["flat list, most relevant first"],
-  "education": ["unchanged"]
+  "education": ["EXACT from input"],
+  "atsAnalysis": {
+    "score": 92,
+    "keywordMatch": 88,
+    "strengths": ["strength 1", "strength 2"],
+    "improvements": ["suggestion 1", "suggestion 2"]
+  }
 }`;
 
-  const userPrompt = `Rewrite for ${jobType} in ${city}, Canada.\nIMPORTANT: The JSON below is the ONLY source of truth. Copy every "role", "company", and "dates" field EXACTLY — do not rename, merge, omit, or leave blank.\n\n${JSON.stringify(resumeForAI)}`;
+  const userPrompt = `Rewrite for "${jobType}" roles in ${city}, Canada.\nCRITICAL: The JSON below is the ONLY source of truth. Copy every "role", "company", and "dates" field EXACTLY as-is. Never rename, merge, omit, or leave blank. Never invent metrics or achievements not present in the original.\n\n${JSON.stringify(resumeForAI)}`;
 
   try {
     const { content } = await callAI([
@@ -957,6 +995,12 @@ Return ONLY valid JSON. No markdown:
       skillCategories?: SkillCategory[];
       skills?: string[];
       education?: string[];
+      atsAnalysis?: {
+        score?: number;
+        keywordMatch?: number;
+        strengths?: string[];
+        improvements?: string[];
+      };
     };
 
     const flatSkills =
@@ -1045,6 +1089,7 @@ Return ONLY valid JSON. No markdown:
       education:        json.education?.length ? json.education : parsed.education,
       certifications:   parsed.certifications?.length ? parsed.certifications : undefined,
       yearsOfExperience: parsed.yearsOfExperience,
+      atsAnalysis:      json.atsAnalysis ?? undefined,
     };
 
     if (!refined.experienceByRole?.length && refined.experience.length > 0) {
