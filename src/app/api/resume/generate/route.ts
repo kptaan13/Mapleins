@@ -37,6 +37,7 @@ import {
 } from "@/lib/competencyProfiles";
 import { extractTextFromPDFUrl } from "@/lib/pdfExtract";
 import { parseJsonBody, withApiHandler } from "@/lib/api/route";
+import { getJobSkills } from "@/lib/jobSkills";
 
 // ─── Placeholder filter ───────────────────────────────────────────────────────
 
@@ -828,7 +829,8 @@ async function refineResumeForATS(
   jobType: string,
   city: string,
   version: ResumeVersion = "ats",
-  jobDescriptionKeywords: string[] = []
+  jobDescriptionKeywords: string[] = [],
+  enrichedSkills?: Awaited<ReturnType<typeof getJobSkills>>
 ): Promise<ParsedResume> {
   const years = parsed.yearsOfExperience ?? 0;
   const tier = getSeniorityTier(years);
@@ -928,7 +930,22 @@ CREDIBILITY RULES:
 ════════════════════════════════════════
 Naturally inject relevant keywords for "${jobType}" roles throughout summary, bullets, and skills.
 Do NOT keyword-stuff. Every keyword must fit grammatically and contextually.
-${jobDescriptionKeywords.length > 0 ? `Priority keywords from job description: ${jobDescriptionKeywords.join(", ")}` : `Common Canadian ATS keywords for this sector: customer service, POS systems, cash handling, inventory management, merchandising, sales targets, team leadership, KPI, store operations, compliance, problem-solving, scheduling, onboarding.`}
+${jobDescriptionKeywords.length > 0
+  ? `Priority keywords from job description: ${jobDescriptionKeywords.join(", ")}`
+  : enrichedSkills?.keywords?.length
+    ? `Verified ATS keywords for ${jobType} roles (sourced from job taxonomy data): ${enrichedSkills.keywords.join(", ")}`
+    : `Common Canadian ATS keywords for this sector: customer service, POS systems, cash handling, inventory management, merchandising, sales targets, team leadership, KPI, store operations, compliance, problem-solving, scheduling.`
+}
+
+${enrichedSkills?.skills?.length
+  ? `VERIFIED SKILLS FOR THIS ROLE (from industry taxonomy — use these as the primary source for the skills section, supplement with resume skills): ${enrichedSkills.skills.join(", ")}`
+  : ""
+}
+
+${enrichedSkills?.duties?.length
+  ? `STANDARD DUTIES FOR THIS ROLE (use as context when improving weak bullets — never copy verbatim, rewrite in candidate's voice): ${enrichedSkills.duties.join(" | ")}`
+  : ""
+}
 
 ════════════════════════════════════════
 5. SKILLS — STRATEGIC CATEGORIES
@@ -1153,7 +1170,11 @@ export async function GET(request: NextRequest) {
   }
 
   const enhanced = applyCompetencyEnhancements(parsed, jobType);
-  const refined = await refineResumeForATS(enhanced, jobType, city);
+  const [enriched, refined0] = await Promise.all([
+    getJobSkills(jobType),
+    Promise.resolve(enhanced),
+  ]);
+  const refined = await refineResumeForATS(refined0, jobType, city, "ats", [], enriched);
   return buildPdfResponse(refined, jobType, city, undefined, theme);
 }
 
@@ -1225,7 +1246,8 @@ export const POST = withApiHandler(
     }
 
     const enhanced = applyCompetencyEnhancements(parsed, jt);
-    const refined = await refineResumeForATS(enhanced, jt, c, v, jdKeywords);
+    const enriched = await getJobSkills(jt);
+    const refined = await refineResumeForATS(enhanced, jt, c, v, jdKeywords, enriched);
 
     const versionLabel = v === "leadership" ? "Leadership" : v === "concise" ? "Concise" : "ATS";
     const themeLabel = t !== "classic" ? `-${t.charAt(0).toUpperCase() + t.slice(1)}` : "";
