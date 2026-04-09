@@ -316,7 +316,6 @@ export default function DashboardPage() {
                 </Button>
               )}
 
-              <p className="text-center text-xs text-gray-400">Free · No credit card needed</p>
 
               <button
                 type="button"

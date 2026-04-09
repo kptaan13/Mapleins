@@ -111,7 +111,7 @@ export default function LandingPage() {
           {/* Social proof badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 border border-green-200 text-[#166534] text-xs font-bold uppercase tracking-wider mb-8">
             <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            Free for newcomers to Canada · No credit card
+            Free for newcomers to Canada
           </div>
 
           {/* Headline */}
@@ -420,7 +420,7 @@ export default function LandingPage() {
                 {WAITLIST_ONLY ? "Join the Waitlist →" : "Get My Canadian Resume →"}
               </Button>
             </Link>
-            <p className="mt-5 text-sm text-green-200 opacity-80">Free · No credit card · 60 seconds</p>
+            <p className="mt-5 text-sm text-green-200 opacity-80">Free · 60 seconds</p>
           </div>
         </div>
       </section>
