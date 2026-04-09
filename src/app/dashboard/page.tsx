@@ -129,19 +129,59 @@ const TOTAL_CHECKLIST_ITEMS = CHECKLIST_CATEGORIES.reduce(
 type DashboardSection = "overview" | "resume" | "interview" | "checklist" | "jobsearch";
 
 // ── Interview Prep data ──
-type InterviewQuestion = { question: string; tip: string };
+type InterviewQuestion = { question: string; tip: string; answer: string };
 
 const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
-  { question: "Tell me about yourself", tip: "Focus on Canadian experience first, then international. Keep it under 2 minutes." },
-  { question: "Why do you want to work here?", tip: "Research the company's Canadian operations, values, and recent news." },
-  { question: "What are your strengths?", tip: "Give concrete examples relevant to Canadian workplace culture — collaboration, initiative, adaptability." },
-  { question: "Describe a challenge you overcame", tip: "Use the STAR framework: Situation, Task, Action, Result. Numbers help." },
-  { question: "Where do you see yourself in 5 years?", tip: "Show commitment to Canada and alignment with the company's growth trajectory." },
-  { question: "Why did you leave your last job?", tip: "Stay positive — mention growth opportunities, new challenges, or relocation." },
-  { question: "Do you have Canadian experience?", tip: "Address it proactively. Bridge international experience to Canadian context with transferable skills." },
-  { question: "Are you legally allowed to work in Canada?", tip: "Answer clearly and directly with your immigration status. Employers need certainty." },
-  { question: "What do you know about Canadian workplace culture?", tip: "Mention collaboration, work-life balance, diversity, and indirect communication style." },
-  { question: "What are your salary expectations?", tip: "Research Canadian market rates on Glassdoor, Payscale, or salary.ca before answering." },
+  {
+    question: "Tell me about yourself",
+    tip: "Focus on Canadian experience first, then international. Keep it under 2 minutes.",
+    answer: "Start with your current role or most recent position, then briefly walk through your career highlights that are most relevant to the job. End with why you're excited about this specific opportunity.\n\nExample: \"I'm a retail supervisor with 6 years of experience leading customer-facing teams. Most recently I managed a team of 12 at [Company] where we consistently exceeded our NPS targets. Before moving to Canada, I held a similar role in [country] where I developed strong skills in inventory management and staff training. I'm particularly excited about this role at [Company] because of your focus on community-driven retail — something I'm passionate about.\""
+  },
+  {
+    question: "Why do you want to work here?",
+    tip: "Research the company's Canadian operations, values, and recent news.",
+    answer: "Show that you've done your homework — mention something specific about the company (a value, recent initiative, or their reputation) and connect it to your own goals.\n\nExample: \"I've followed [Company]'s growth in the Canadian market closely, especially your recent initiative around sustainable sourcing. I've spent years building teams that care about more than just the bottom line, and your culture of accountability and community impact aligns exactly with how I work. I want to bring that energy to your team.\""
+  },
+  {
+    question: "What are your strengths?",
+    tip: "Give concrete examples relevant to Canadian workplace culture — collaboration, initiative, adaptability.",
+    answer: "Pick 2–3 strengths and back each one with a brief, specific example. Avoid vague answers like \"I'm a hard worker.\"\n\nExample: \"My biggest strength is cross-functional communication. At my last role, I was the link between warehouse operations and the retail floor — I built a shared tracking system that cut stockout incidents by 30%. I'm also highly adaptable; when I moved to Canada, I quickly upskilled on local payroll regulations and had our team fully compliant within 3 weeks.\""
+  },
+  {
+    question: "What is your greatest weakness?",
+    tip: "Pick a real weakness, but show you're actively working on it. Never say 'I'm a perfectionist.'",
+    answer: "Choose something genuine that isn't critical to the role, and follow it immediately with what you're doing to improve.\n\nExample: \"I used to struggle with delegating — I'd take on too much myself because I wanted things done a certain way. I realized this was limiting my team's growth, so I started assigning ownership of projects with clear outcomes rather than steps. It's made my team more confident and freed me up to focus on strategy.\""
+  },
+  {
+    question: "Describe a challenge you overcame",
+    tip: "Use the STAR framework: Situation, Task, Action, Result. Numbers help.",
+    answer: "Use the STAR method. Keep it concise — about 90 seconds.\n\nExample: \"In my previous role (S), our busiest location was understaffed heading into the holiday season (T). I coordinated with HR to fast-track hiring, personally trained 8 new staff in 2 weeks, and rescheduled shifts to ensure coverage (A). We hit our December sales target and received zero customer complaints about wait times — a first for that location (R).\""
+  },
+  {
+    question: "Where do you see yourself in 5 years?",
+    tip: "Show commitment to Canada and alignment with the company's growth trajectory.",
+    answer: "Be ambitious but realistic. Show you want to grow with this company, not just use it as a stepping stone.\n\nExample: \"In 5 years I'd like to be in a senior operations role, ideally having grown with this company. I'm focused on building deep expertise in [relevant area] and developing into someone who can mentor junior team members. Canada is my long-term home and I want to build my career here — this role feels like exactly the right foundation.\""
+  },
+  {
+    question: "Why did you leave your last job?",
+    tip: "Stay positive — mention growth opportunities, new challenges, or relocation.",
+    answer: "Never speak negatively about a former employer. Frame your departure as a positive step forward.\n\nExample: \"My previous role was a great learning experience, but I reached a point where the growth opportunities were limited. I'm at a stage in my career where I want to take on more responsibility and contribute to a larger operation. When I saw this opening, it felt like the natural next step.\""
+  },
+  {
+    question: "Do you have Canadian experience?",
+    tip: "Address it proactively. Bridge international experience to Canadian context with transferable skills.",
+    answer: "Acknowledge the question honestly, then pivot to your strengths and transferable skills. Many employers ask this but care more about competence.\n\nExample: \"I'm newer to the Canadian job market, but the skills I bring are directly transferable. Customer service expectations, team leadership, and operational efficiency aren't country-specific — they're universal. I've also been proactive about understanding Canadian workplace norms: I completed [course/certification] and I've been connecting with industry professionals here. I'm a fast learner and I'm ready to contribute from day one.\""
+  },
+  {
+    question: "Are you legally allowed to work in Canada?",
+    tip: "Answer clearly and directly with your immigration status. Employers need certainty.",
+    answer: "Be clear, confident, and specific. Vague answers create doubt.\n\nExample: \"Yes, absolutely. I hold an open work permit valid until [date], which allows me to work for any employer in Canada without restriction.\" OR \"I'm a permanent resident of Canada, so there are no work restrictions.\" OR \"I'm a Canadian citizen.\"\n\nIf your status has conditions, explain them briefly and reassuringly."
+  },
+  {
+    question: "What are your salary expectations?",
+    tip: "Research Canadian market rates on Glassdoor, Payscale, or salary.ca before answering.",
+    answer: "Give a range based on research, not a single number. Anchor the range at the top of what's reasonable.\n\nExample: \"Based on my research for this type of role in [city], and considering my [X] years of experience, I'm targeting somewhere in the $55,000–$65,000 range. That said, I'm open to discussing the full compensation package — benefits and growth opportunities matter to me too.\"\n\nResearch tip: Check salary.ca, Glassdoor, and the Government of Canada Job Bank for reliable Canadian salary data."
+  },
 ];
 
 const CANADIAN_TIPS = [
@@ -1245,19 +1285,35 @@ export default function DashboardPage() {
                     <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                       <button
                         onClick={() => setOpenQuestion(openQuestion === i ? null : i)}
-                        className="w-full flex items-center justify-between px-5 py-4 text-left gap-3"
+                        className="w-full flex items-center justify-between px-5 py-4 text-left gap-3 hover:bg-gray-50/50 transition-colors"
                       >
-                        <p className="text-sm font-semibold text-gray-800">{q.question}</p>
+                        <div className="flex items-center gap-3">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-[#166534] text-[10px] font-black flex items-center justify-center">{i + 1}</span>
+                          <p className="text-sm font-semibold text-gray-800">{q.question}</p>
+                        </div>
                         <svg
-                          className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${openQuestion === i ? "rotate-180" : ""}`}
+                          className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 ${openQuestion === i ? "rotate-180" : ""}`}
                           fill="none" viewBox="0 0 24 24" stroke="currentColor"
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </button>
                       {openQuestion === i && (
-                        <div className="px-5 pb-4 border-t border-gray-50">
-                          <p className="text-sm text-gray-600 leading-relaxed pt-3">💡 {q.tip}</p>
+                        <div className="border-t border-gray-100">
+                          {/* Tip banner */}
+                          <div className="flex items-start gap-2 px-5 py-3 bg-amber-50 border-b border-amber-100">
+                            <span className="text-amber-500 text-sm mt-0.5 flex-shrink-0">💡</span>
+                            <p className="text-xs text-amber-800 font-medium leading-relaxed">{q.tip}</p>
+                          </div>
+                          {/* Answer */}
+                          <div className="px-5 py-4 space-y-3">
+                            <p className="text-[11px] font-black text-[#166534] uppercase tracking-widest">Sample Answer</p>
+                            {q.answer.split("\n\n").map((para, pi) => (
+                              <p key={pi} className={`text-sm leading-relaxed ${para.startsWith("Example:") || para.startsWith("Research tip:") ? "text-gray-800 bg-green-50 border border-green-100 rounded-xl px-4 py-3" : "text-gray-600"}`}>
+                                {para}
+                              </p>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
