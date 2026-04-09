@@ -161,6 +161,38 @@ function SectionWarning({ message }: { message: string }) {
   );
 }
 
+function SectionCard({
+  id, icon, title, badge, children, warning, collapsed, onToggle,
+}: {
+  id: string; icon: string; title: string; badge?: string;
+  children: React.ReactNode; warning?: string;
+  collapsed: Record<string, boolean>;
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <button
+        type="button"
+        onClick={() => onToggle(id)}
+        className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50/50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-lg">{icon}</span>
+          <span className="font-black text-gray-900 text-sm tracking-tight">{title}</span>
+          {badge && <span className="text-[9px] font-black bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase tracking-wider">{badge}</span>}
+        </div>
+        <svg className={`w-4 h-4 text-gray-300 transition-transform duration-200 ${collapsed[id] ? "-rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+      </button>
+      {!collapsed[id] && (
+        <div className="px-6 pb-6">
+          {warning && <SectionWarning message={warning} />}
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
+
 // ─── Live Preview ─────────────────────────────────────────────────────────────
 
 function ResumePreview({ resume, theme }: { resume: ResumeData; theme: string }) {
@@ -568,30 +600,6 @@ function EditorContent() {
 
   const scoreColor = ats.total >= 80 ? "#166534" : ats.total >= 60 ? "#ea580c" : "#dc2626";
 
-  // ── Section card wrapper ──
-  const SectionCard = ({ id, icon, title, badge, children, warning }: { id: string; icon: string; title: string; badge?: string; children: React.ReactNode; warning?: string }) => (
-    <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <button
-        type="button"
-        onClick={() => toggleSection(id)}
-        className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50/50 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <span className="text-lg">{icon}</span>
-          <span className="font-black text-gray-900 text-sm tracking-tight">{title}</span>
-          {badge && <span className="text-[9px] font-black bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase tracking-wider">{badge}</span>}
-        </div>
-        <svg className={`w-4 h-4 text-gray-300 transition-transform duration-200 ${collapsed[id] ? "-rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-      </button>
-      {!collapsed[id] && (
-        <div className="px-6 pb-6">
-          {warning && <SectionWarning message={warning} />}
-          {children}
-        </div>
-      )}
-    </section>
-  );
-
   return (
     <div className="min-h-screen bg-[#f5f7f6]">
 
@@ -658,7 +666,7 @@ function EditorContent() {
         <div className={`w-full lg:w-[500px] xl:w-[540px] shrink-0 overflow-y-auto px-4 py-6 space-y-4 ${activeTab === "preview" ? "hidden lg:block" : ""}`}>
 
           {/* Contact */}
-          <SectionCard id="contact" icon="👤" title="Contact Details">
+          <SectionCard id="contact" icon="👤" title="Contact Details" collapsed={collapsed} onToggle={toggleSection}>
             <div className="grid grid-cols-1 gap-4">
               {(["name", "email", "phone"] as const).map((f) => (
                 <div key={f}>
@@ -673,7 +681,8 @@ function EditorContent() {
 
           {/* Summary */}
           <SectionCard id="summary" icon="✨" title="Professional Summary"
-            warning={!resume.summary.trim() ? "Add a summary — it adds up to 15 ATS points and is read first by recruiters." : undefined}>
+            warning={!resume.summary.trim() ? "Add a summary — it adds up to 15 ATS points and is read first by recruiters." : undefined}
+            collapsed={collapsed} onToggle={toggleSection}>
             <div className="relative">
               <textarea value={resume.summary} onChange={(e) => setField("summary", e.target.value)} rows={4}
                 placeholder="Hook the employer in 4 sentences. Mention your expertise, a key achievement, and your value in Canada..."
@@ -702,7 +711,8 @@ function EditorContent() {
 
           {/* Experience */}
           <SectionCard id="experience" icon="💼" title="Work Experience"
-            badge={`${(resume.experienceByRole ?? []).length} roles`}>
+            badge={`${(resume.experienceByRole ?? []).length} roles`}
+            collapsed={collapsed} onToggle={toggleSection}>
             <div className="space-y-6">
               {(resume.experienceByRole ?? []).map((role, rIdx) => (
                 <div key={rIdx}
@@ -776,7 +786,8 @@ function EditorContent() {
 
           {/* Skills */}
           <SectionCard id="skills" icon="⚡" title="Skills"
-            warning={resume.skills.filter(Boolean).length < 4 ? "Add at least 4 skills — this section adds up to 3 ATS points." : undefined}>
+            warning={resume.skills.filter(Boolean).length < 4 ? "Add at least 4 skills — this section adds up to 3 ATS points." : undefined}
+            collapsed={collapsed} onToggle={toggleSection}>
             <div className="flex flex-wrap gap-2">
               {resume.skills.map((s, i) => (
                 <div key={i} className="flex items-center gap-1 group bg-gray-50 border border-gray-100 rounded-xl overflow-hidden">
@@ -793,7 +804,8 @@ function EditorContent() {
 
           {/* Education */}
           <SectionCard id="education" icon="🎓" title="Education"
-            warning={resume.education.filter(Boolean).length === 0 ? "Add your education — it contributes 2 ATS points." : undefined}>
+            warning={resume.education.filter(Boolean).length === 0 ? "Add your education — it contributes 2 ATS points." : undefined}
+            collapsed={collapsed} onToggle={toggleSection}>
             <div className="space-y-2">
               {resume.education.map((e, i) => (
                 <div key={i} className="flex gap-2 group">
@@ -811,7 +823,8 @@ function EditorContent() {
 
           {/* Certifications */}
           <SectionCard id="certs" icon="🏅" title="Certifications"
-            warning={!resume.certifications?.filter(Boolean).length ? "WHMIS, First Aid, Serve It Right — certifications add 1 ATS point and stand out to recruiters." : undefined}>
+            warning={!resume.certifications?.filter(Boolean).length ? "WHMIS, First Aid, Serve It Right — certifications add 1 ATS point and stand out to recruiters." : undefined}
+            collapsed={collapsed} onToggle={toggleSection}>
             <div className="space-y-2">
               {(resume.certifications ?? []).map((c, i) => (
                 <div key={i} className="flex gap-2 group">
