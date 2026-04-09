@@ -884,7 +884,7 @@ BANNED: "passionate", "results-oriented", "dynamic", "team player", "hardworking
 1. Start EVERY bullet with a strong past-tense action verb.
 2. NEVER use: ${WEAK_PHRASES.map((p) => `"${p}"`).join(", ")}.
 3. Target 5–8 bullets per role. When the original role has 5+ bullets, you MUST return at least 5 improved bullets for that role (never collapse a detailed role down to only 1–2 bullets).
-4. AT LEAST 2 of the bullets for each role must include hard numbers (team size, %, $, volume, timeframe).
+4. Use hard numbers ONLY when they appear in the original resume (team size, %, $, volume, timeframe).
    Formula: Action Verb + Scope + Result + Metric (+ Timeframe if available)
    Examples:
    • "Managed a team of 14 across 3 store departments, exceeding sales targets by 22% in Q4."
@@ -892,7 +892,7 @@ BANNED: "passionate", "results-oriented", "dynamic", "team player", "hardworking
    • "Coordinated 180+ daily deliveries across GTA, maintaining 97% on-time rate."
 5. Add KPI/ownership language: "P&L ownership", "budget accountability of $X", "reporting to Director".
 6. Bullet = 1 sentence, under 25 words. Specific beats vague.
-7. If no numbers exist in original: estimate realistic ones based on typical company size and role. DO NOT invent employers, titles, or dates.
+7. NEVER invent metrics, numbers, or achievements that are not in the original resume. NEVER invent employers, titles, or dates. If no numbers exist, write strong action-verb bullets without fabricated metrics.
 
 ━━━ CREDIBILITY CHECK ━━━
 Before including any achievement, verify:
