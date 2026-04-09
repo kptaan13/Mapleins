@@ -164,18 +164,45 @@ export const POST = withApiHandler(
       yearsOfExperience: 0,
     };
 
-    const aiPromptMessage = `You are a Canadian career advisor. Extract the resume EXACTLY as written - do NOT simplify, condense, or combine bullet points.
+    const aiPromptMessage = `You are a Canadian resume data extraction specialist. Your ONLY job is to extract data from the resume exactly as written — do NOT rewrite, improve, summarize, or invent anything.
 
-RULES:
-- Use the REAL name, email, phone, job titles, companies, dates, and every responsibility/achievement from the resume.
-- Do NOT merge multiple bullets into one. Each responsibility or achievement must stay as its own bullet.
-- Preserve full detail: keep 5-15+ bullets per job if that is what the resume shows.
-- Extract proper sections: Experience (by role), Education, Skills.
-- suggestedSectors MUST be from: ${JOB_SECTORS.join(", ")}.
+════════════════════════════════════
+EXTRACTION RULES (NON-NEGOTIABLE)
+════════════════════════════════════
+1. Extract EVERY job role separately. Never merge multiple jobs into one.
+2. For each role, copy the job title, company name, and dates EXACTLY as written.
+3. Copy every bullet/responsibility for each role exactly — do NOT paraphrase, shorten, or combine.
+4. Extract the real name, phone, email, and location from the header.
+5. Extract all skills, education entries, and certifications exactly as written.
+6. NEVER invent, infer, or add anything not present in the resume text.
+7. suggestedSectors MUST only use values from: ${JOB_SECTORS.join(", ")}.
 
-Return ONLY valid JSON, no markdown.`;
+════════════════════════════════════
+REQUIRED JSON FORMAT
+════════════════════════════════════
+Return ONLY valid JSON — no markdown, no commentary:
+{
+  "name": "Full Name",
+  "email": "email@example.com",
+  "phone": "+1 (xxx) xxx-xxxx",
+  "summary": "professional summary text or empty string",
+  "experienceByRole": [
+    {
+      "role": "EXACT job title from resume",
+      "company": "EXACT company name from resume",
+      "dates": "EXACT date range from resume",
+      "bullets": ["exact bullet 1", "exact bullet 2"]
+    }
+  ],
+  "skills": ["skill1", "skill2"],
+  "education": ["education entry 1"],
+  "certifications": ["cert 1"],
+  "suggestedSectors": ["Retail"],
+  "targetJobTitles": ["Job Title 1"],
+  "yearsOfExperience": 4
+}`;
 
-    const userPromptMessage = `Extract from this resume (use REAL name, contact, roles, skills, certifications):\n\n${rawText.slice(0, 12000)}`;
+    const userPromptMessage = `Extract ALL data from this resume. Every job must appear separately with its exact company name and dates. Do not merge jobs or invent anything:\n\n${rawText.slice(0, 12000)}`;
 
     try {
       const { content } = await callAI([
