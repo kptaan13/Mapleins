@@ -331,6 +331,7 @@ function EditorContent() {
   const [selectedTheme, setSelectedTheme] = useState("federal");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved">("idle");
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [showEditorPaywall, setShowEditorPaywall] = useState(false);
   const [showPromoInput, setShowPromoInput] = useState(false);
   const [promoCode, setPromoCode] = useState("");
@@ -410,15 +411,19 @@ function EditorContent() {
 
   // ── Inline bullet rewrite ──
   const rewriteBullet = useCallback(async (roleIdx: number, bulletIdx: number, current: string) => {
+    if (!current.trim() || current.trim().length < 5) return;
     const key = `${roleIdx}_${bulletIdx}`;
     setRewritingBullet(key);
     try {
       const res = await fetch("/api/resume/hint", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ field: "bullet", value: current, context: { jobType, city } }),
+        // field must start with "exp_" so the hint route treats it as experience
+        body: JSON.stringify({ field: "exp_bullet", value: current, context: { jobType: jobType || "General", city: city || "Canada" } }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const best = data.alternatives?.[0] || data.hint;
+      // prefer first alternative, fall back to hint text
+      const best = (data.alternatives ?? []).find((a: string) => a.length > 10) ?? (data.hint?.length > 10 ? data.hint : null);
       if (best) {
         setResume((r) => {
           const roles = [...(r.experienceByRole ?? [])];
@@ -427,9 +432,14 @@ function EditorContent() {
           roles[roleIdx] = { ...roles[roleIdx], bullets };
           return { ...r, experienceByRole: roles };
         });
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 2000);
       }
-    } catch { /* ignore */ }
-    finally { setRewritingBullet(null); }
+    } catch (err) {
+      console.error("Bullet rewrite failed:", err);
+    } finally {
+      setRewritingBullet(null);
+    }
   }, [jobType, city]);
 
   // ── Setters ──
@@ -496,6 +506,7 @@ function EditorContent() {
   // ── AI improve all ──
   const generateWithAI = async () => {
     setAiGenerating(true);
+    setAiError(null);
     try {
       const lines = [resume.name, resume.email, resume.phone, "", "SUMMARY:", resume.summary, "", "EXPERIENCE:"];
       (resume.experienceByRole ?? []).forEach((r) => {
@@ -506,14 +517,25 @@ function EditorContent() {
       lines.push("SKILLS:", resume.skills.join(", "), "", "EDUCATION:", ...resume.education);
       const res = await fetch("/api/resume/edit", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeText: lines.join("\n"), jobType, city, immigrationStatus }),
+        body: JSON.stringify({
+          resumeText: lines.join("\n"),
+          jobType: jobType || "General",
+          city: city || "Canada",
+          immigrationStatus,
+        }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData?.error || `Server error (${res.status})`);
+      }
       const data = await res.json();
       setResume((prev) => ({ ...prev, ...data, experience: data.experienceByRole?.flatMap((e: ExperienceEntry) => e.bullets ?? []) ?? prev.experience }));
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2500);
-    } catch { /* ignore */ }
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "AI improvement failed. Please try again.");
+      setTimeout(() => setAiError(null), 5000);
+    }
     finally { setAiGenerating(false); }
   };
 
@@ -609,10 +631,13 @@ function EditorContent() {
               ))}
             </div>
 
-            <Button variant="outline" size="sm" onClick={generateWithAI} disabled={aiGenerating}
-              className="hidden md:flex h-9 px-4 border-2 border-[#166534] text-[#166534] font-bold rounded-xl hover:bg-green-50 text-xs">
-              {aiGenerating ? <><span className="w-3 h-3 border-2 border-[#166534] border-t-transparent rounded-full animate-spin mr-2" />Improving…</> : "✨ AI Improve"}
-            </Button>
+            <div className="hidden md:flex flex-col items-end gap-1">
+              <Button variant="outline" size="sm" onClick={generateWithAI} disabled={aiGenerating}
+                className="h-9 px-4 border-2 border-[#166534] text-[#166534] font-bold rounded-xl hover:bg-green-50 text-xs">
+                {aiGenerating ? <><span className="w-3 h-3 border-2 border-[#166534] border-t-transparent rounded-full animate-spin mr-2" />Improving…</> : "✨ AI Improve"}
+              </Button>
+              {aiError && <p className="text-[10px] text-red-500 max-w-[160px] text-right leading-tight">{aiError}</p>}
+            </div>
 
             <Button size="sm" onClick={() => downloadPdf()} disabled={downloading}
               className="h-9 px-5 green-gradient text-white font-bold rounded-xl shadow hover:shadow-lg hover:scale-105 transition-all text-xs">
