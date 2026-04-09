@@ -38,16 +38,19 @@ type AnalysisResult = {
 
 const STORAGE_KEY = "mapleinsResumeAnalysis";
 
-function loadSaved(): AnalysisResult | null {
+// ── localStorage helpers (cache / offline fallback) ──
+function loadLocal(): AnalysisResult | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY) ?? sessionStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as AnalysisResult) : null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
-
-function clearSaved() {
+function saveLocal(data: AnalysisResult) {
+  const raw = JSON.stringify(data);
+  try { localStorage.setItem(STORAGE_KEY, raw); } catch { /* ignore */ }
+  try { sessionStorage.setItem(STORAGE_KEY, raw); } catch { /* ignore */ }
+}
+function clearLocal() {
   try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
   try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
 }
@@ -77,12 +80,37 @@ export default function DashboardPage() {
   const [storageFailed, setStorageFailed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load saved resume on mount
+  // ── Load saved resume on mount (Supabase first, localStorage fallback) ──
   useEffect(() => {
-    const s = loadSaved();
-    setSaved(s);
-    if (s?.targetRole) setTargetRole(s.targetRole);
-    if (s?.city) setCity(s.city);
+    async function load() {
+      // 1. Show localStorage instantly (no flicker)
+      const local = loadLocal();
+      if (local) {
+        setSaved(local);
+        if (local.targetRole) setTargetRole(local.targetRole);
+        if (local.city) setCity(local.city);
+      }
+      // 2. Fetch from Supabase (cross-device, more reliable)
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase
+          .from("resumes")
+          .select("analysis")
+          .eq("user_id", user.id)
+          .single();
+        if (data?.analysis) {
+          const r = data.analysis as AnalysisResult;
+          setSaved(r);
+          saveLocal(r); // keep local cache in sync
+          if (r.targetRole) setTargetRole(r.targetRole);
+          if (r.city) setCity(r.city);
+        }
+      } catch { /* fall back to localStorage silently */ }
+    }
+    load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── File handling ──
@@ -151,6 +179,19 @@ export default function DashboardPage() {
 
       setAnalysis(data);
       if (!targetRole && data.targetJobTitles?.length) setTargetRole(data.targetJobTitles[0]);
+
+      // Save to Supabase + localStorage
+      saveLocal(data);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from("resumes").upsert(
+            { user_id: user.id, analysis: data, updated_at: new Date().toISOString() },
+            { onConflict: "user_id" }
+          );
+        }
+      } catch { /* non-fatal — local cache is enough */ }
+
       setView("form");
       setError(null);
       setResumeFile(null);
@@ -171,14 +212,26 @@ export default function DashboardPage() {
     }
     const activeAnalysis = analysis ?? saved;
     if (activeAnalysis) {
-      const payload = JSON.stringify({
+      const updated = {
         ...activeAnalysis,
         targetRole: targetRole.trim(),
         city: city.trim(),
         jobDescription: jobDescription.trim(),
-      });
-      sessionStorage.setItem(STORAGE_KEY, payload);
-      try { localStorage.setItem(STORAGE_KEY, payload); } catch { /* ignore */ }
+      };
+      saveLocal(updated);
+      // Persist updated preferences to Supabase in the background
+      (async () => {
+        try {
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from("resumes").upsert(
+              { user_id: user.id, analysis: updated, updated_at: new Date().toISOString() },
+              { onConflict: "user_id" }
+            );
+          }
+        } catch { /* non-fatal */ }
+      })();
     }
     const params = new URLSearchParams({
       jobType: targetRole.trim(),
@@ -245,7 +298,17 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <button
-                  onClick={() => { clearSaved(); setSaved(null); }}
+                  onClick={async () => {
+                  clearLocal();
+                  setSaved(null);
+                  setTargetRole("");
+                  setCity("");
+                  try {
+                    const supabase = createClient();
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) await supabase.from("resumes").delete().eq("user_id", user.id);
+                  } catch { /* non-fatal */ }
+                }}
                   className="text-green-200 hover:text-white text-xs font-semibold transition-colors"
                   title="Clear saved resume"
                 >
