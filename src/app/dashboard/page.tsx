@@ -126,7 +126,7 @@ const TOTAL_CHECKLIST_ITEMS = CHECKLIST_CATEGORIES.reduce(
   0
 );
 
-type DashboardSection = "overview" | "resume" | "interview" | "checklist" | "jobsearch";
+type DashboardSection = "overview" | "mapleins-resume" | "interview" | "checklist" | "jobsearch";
 
 // ── Interview Prep data ──
 type InterviewQuestion = { question: string; tip: string; answer: string };
@@ -280,6 +280,44 @@ export default function DashboardPage() {
     new Set(CHECKLIST_CATEGORIES.map((c) => c.id))
   );
 
+  // ── Mapleins Resume: create by title ──
+  const [newResumeTitle, setNewResumeTitle] = useState("");
+  const [newResumeCity, setNewResumeCity] = useState("");
+
+  // ── Mapleins Resume: create by job description ──
+  const [newResumeJD, setNewResumeJD] = useState("");
+  const [jdParsing, setJdParsing] = useState(false);
+  const [jdError, setJdError] = useState<string | null>(null);
+
+  const handleCreateFromJD = async () => {
+    if (newResumeJD.trim().length < 30) return;
+    setJdParsing(true);
+    setJdError(null);
+    try {
+      const res = await fetch("/api/resume/hint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          field: "jobTitle",
+          value: newResumeJD.trim().slice(0, 1500),
+          context: { jobType: "General", city: "Canada" },
+        }),
+      });
+      const data = await res.json();
+      // Extract a job title from the hint or alternatives
+      const extracted: string =
+        (data.alternatives ?? []).find((a: string) => a.length > 3 && a.length < 80) ??
+        (data.hint?.length > 3 && data.hint.length < 80 ? data.hint : "");
+      const title = extracted || "General";
+      const params = new URLSearchParams({ jobType: title, city: "Canada", jobDescription: newResumeJD.trim().slice(0, 800) });
+      router.push(`/editor?${params.toString()}`);
+    } catch {
+      setJdError("Could not parse the job description. Try the Job Title option instead.");
+    } finally {
+      setJdParsing(false);
+    }
+  };
+
   // ── Interview prep tab ──
   const [interviewTab, setInterviewTab] = useState<"questions" | "tips" | "star">("questions");
   const [openQuestion, setOpenQuestion] = useState<number | null>(null);
@@ -309,10 +347,13 @@ export default function DashboardPage() {
           if (r.targetRole) setTargetRole(r.targetRole);
           if (r.city) setCity(r.city);
           if (data.updated_at) setSavedUpdatedAt(data.updated_at as string);
-          // Returning user with saved resume → go straight to dashboard
-          setView("dashboard");
         }
-      } catch { /* fall back to localStorage silently */ }
+        // Always go to dashboard — new users get empty state, returning users see their resume
+        setView("dashboard");
+      } catch {
+        // Even if Supabase fails, still show dashboard
+        setView("dashboard");
+      }
     }
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -906,7 +947,7 @@ export default function DashboardPage() {
 
   const navItems: { id: DashboardSection; icon: string; label: string }[] = [
     { id: "overview", icon: "🏠", label: "Overview" },
-    { id: "resume", icon: "📄", label: "My Resume" },
+    { id: "mapleins-resume", icon: "🍁", label: "Mapleins Resume" },
     { id: "interview", icon: "🎤", label: "Interview Prep" },
     { id: "checklist", icon: "✅", label: "Job Checklist" },
     { id: "jobsearch", icon: "🔍", label: "Job Search" },
@@ -1111,6 +1152,21 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              {/* No resume yet — CTA nudge */}
+              {!dashSaved && (
+                <div className="bg-white rounded-2xl border-2 border-dashed border-green-200 p-6 text-center">
+                  <p className="text-2xl mb-2">🍁</p>
+                  <p className="font-bold text-gray-800 text-sm">No resume yet</p>
+                  <p className="text-xs text-gray-400 mt-1 mb-4">Create or upload a resume to unlock your ATS score, job matches, and more.</p>
+                  <Button
+                    onClick={() => setActiveSection("mapleins-resume")}
+                    className="green-gradient text-white font-bold rounded-xl px-6 text-sm"
+                  >
+                    Get Started →
+                  </Button>
+                </div>
+              )}
+
               {/* Suggested sectors */}
               {(dashSaved?.suggestedSectors ?? []).length > 0 && (
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
@@ -1125,133 +1181,196 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ── SECTION: My Resume ── */}
-          {activeSection === "resume" && (
+          {/* ── SECTION: Mapleins Resume ── */}
+          {activeSection === "mapleins-resume" && (
             <div className="max-w-3xl mx-auto space-y-5">
-              <h1 className="text-2xl font-black text-gray-900">📄 My Resume</h1>
+              <div>
+                <h1 className="text-2xl font-black text-gray-900">🍁 Mapleins Resume</h1>
+                <p className="text-sm text-gray-500 mt-1">Create a Canadian ATS-optimized resume from scratch, or manage your existing one.</p>
+              </div>
 
-              {!dashSaved ? (
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
-                  <p className="text-gray-400 font-semibold mb-4">No resume saved yet.</p>
-                  <Button onClick={() => setView("upload")} className="green-gradient text-white font-bold rounded-xl px-6">
-                    Upload Resume →
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  {/* Identity card */}
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                    <div className="green-gradient px-6 py-5">
-                      <h2 className="text-xl font-black text-white">{dashSaved.name || "—"}</h2>
-                      <div className="flex flex-wrap gap-3 mt-1.5">
-                        {dashSaved.email && <span className="text-green-100 text-sm">{dashSaved.email}</span>}
-                        {dashSaved.phone && <span className="text-green-100 text-sm">{dashSaved.phone}</span>}
+              {/* ── Create new resume ── */}
+              <div>
+                <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Create New Resume</h2>
+                <div className="grid sm:grid-cols-2 gap-4">
+
+                  {/* By Job Title */}
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 green-gradient rounded-xl flex items-center justify-center text-white text-lg shadow flex-shrink-0">🎯</div>
+                      <div>
+                        <p className="font-black text-gray-900 text-sm">By Job Title</p>
+                        <p className="text-xs text-gray-400">Enter the role you&apos;re targeting</p>
                       </div>
-                      {dashSaved.targetRole && (
-                        <p className="mt-2 text-white text-sm font-semibold opacity-90">
-                          🎯 {dashSaved.targetRole}{dashSaved.city ? ` · ${dashSaved.city}` : ""}
-                        </p>
+                    </div>
+                    <input
+                      type="text"
+                      value={newResumeTitle}
+                      onChange={(e) => setNewResumeTitle(e.target.value)}
+                      placeholder="e.g. Store Manager, Data Analyst…"
+                      maxLength={100}
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent"
+                    />
+                    <input
+                      type="text"
+                      value={newResumeCity}
+                      onChange={(e) => setNewResumeCity(e.target.value)}
+                      placeholder="City or province (e.g. Toronto, ON)"
+                      maxLength={80}
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent"
+                    />
+                    <Button
+                      disabled={!newResumeTitle.trim()}
+                      onClick={() => {
+                        const params = new URLSearchParams({ jobType: newResumeTitle.trim(), city: newResumeCity.trim() || "Canada" });
+                        router.push(`/editor?${params.toString()}`);
+                      }}
+                      className="w-full green-gradient text-white font-bold rounded-xl py-2.5 text-sm disabled:opacity-40"
+                    >
+                      Create Resume →
+                    </Button>
+                  </div>
+
+                  {/* By Job Description */}
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-center text-lg flex-shrink-0">📋</div>
+                      <div>
+                        <p className="font-black text-gray-900 text-sm">By Job Description</p>
+                        <p className="text-xs text-gray-400">Paste a job posting — AI extracts the role</p>
+                      </div>
+                    </div>
+                    <textarea
+                      value={newResumeJD}
+                      onChange={(e) => setNewResumeJD(e.target.value)}
+                      placeholder="Paste the full job description here. AI will extract the title, required skills, and keywords to build your resume around."
+                      rows={4}
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent resize-none"
+                    />
+                    <Button
+                      disabled={newResumeJD.trim().length < 30 || jdParsing}
+                      onClick={handleCreateFromJD}
+                      className="w-full green-gradient text-white font-bold rounded-xl py-2.5 text-sm disabled:opacity-40"
+                    >
+                      {jdParsing
+                        ? <><span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-2 inline-block" />Extracting role…</>
+                        : "Build from Job Description →"}
+                    </Button>
+                    {jdError && <p className="text-xs text-red-500 font-medium">{jdError}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Upload existing ── */}
+              <div>
+                <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Have an existing resume?</h2>
+                <button
+                  onClick={() => setView("upload")}
+                  className="w-full flex items-center gap-4 bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 hover:border-green-300 hover:bg-green-50/50 transition-all text-left"
+                >
+                  <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-lg flex-shrink-0">📤</div>
+                  <div className="flex-1">
+                    <p className="font-bold text-gray-800 text-sm">Upload PDF Resume</p>
+                    <p className="text-xs text-gray-400 mt-0.5">AI reads it, fixes ATS gaps, and rebuilds it for the Canadian market</p>
+                  </div>
+                  <svg className="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* ── Saved resume ── */}
+              {dashSaved && (
+                <div>
+                  <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Your Saved Resume</h2>
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="green-gradient px-6 py-5 flex items-start justify-between">
+                      <div>
+                        <h2 className="text-lg font-black text-white">{dashSaved.name || "Your Resume"}</h2>
+                        <div className="flex flex-wrap gap-3 mt-1">
+                          {dashSaved.email && <span className="text-green-100 text-xs">{dashSaved.email}</span>}
+                          {dashSaved.phone && <span className="text-green-100 text-xs">{dashSaved.phone}</span>}
+                        </div>
+                        {dashSaved.targetRole && (
+                          <p className="mt-1.5 text-white text-xs font-semibold opacity-90">
+                            🎯 {dashSaved.targetRole}{dashSaved.city ? ` · ${dashSaved.city}` : ""}
+                          </p>
+                        )}
+                      </div>
+                      {savedUpdatedAt && (
+                        <span className="text-green-200 text-[10px] font-semibold flex-shrink-0 mt-1">
+                          Updated {new Date(savedUpdatedAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}
+                        </span>
                       )}
                     </div>
-                    {dashSaved.summary && (
+
+                    {/* Experience preview */}
+                    {(dashSaved.experienceByRole ?? []).length > 0 && (
                       <div className="px-6 py-4 border-b border-gray-50">
-                        <p className="text-sm text-gray-600 leading-relaxed">{dashSaved.summary}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">Work Experience</p>
+                        <div className="space-y-2">
+                          {(dashSaved.experienceByRole ?? []).slice(0, 3).map((exp, i) => (
+                            <div key={i} className="flex items-start gap-2">
+                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
+                              <p className="text-xs text-gray-700">
+                                <span className="font-semibold">{exp.role}</span>
+                                {exp.company && <span className="text-gray-400"> · {exp.company}</span>}
+                              </p>
+                            </div>
+                          ))}
+                          {(dashSaved.experienceByRole ?? []).length > 3 && (
+                            <p className="text-[11px] text-gray-400 pl-3.5">+{(dashSaved.experienceByRole ?? []).length - 3} more</p>
+                          )}
+                        </div>
                       </div>
                     )}
-                  </div>
 
-                  {/* Experience */}
-                  {(dashSaved.experienceByRole ?? []).length > 0 && (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Work Experience</h3>
-                      <div className="space-y-4">
-                        {(dashSaved.experienceByRole ?? []).map((exp, i) => (
-                          <div key={i} className="pb-4 border-b border-gray-50 last:border-0 last:pb-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <p className="font-bold text-gray-800 text-sm">{exp.role}</p>
-                                <p className="text-xs text-gray-500 mt-0.5">{exp.company}{exp.dates ? ` · ${exp.dates}` : ""}</p>
-                              </div>
-                            </div>
-                            {exp.bullets.length > 0 && (
-                              <p className="mt-2 text-xs text-gray-600 leading-relaxed">{exp.bullets[0]}</p>
-                            )}
-                          </div>
-                        ))}
+                    {/* Skills preview */}
+                    {dashSaved.skills.filter(Boolean).length > 0 && (
+                      <div className="px-6 py-4">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">Skills</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {dashSaved.skills.filter(Boolean).slice(0, 8).map((s) => (
+                            <span key={s} className="text-[11px] px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-[#166534] font-semibold">{s}</span>
+                          ))}
+                          {dashSaved.skills.filter(Boolean).length > 8 && (
+                            <span className="text-[11px] px-2.5 py-1 rounded-full bg-gray-50 border border-gray-200 text-gray-400">+{dashSaved.skills.filter(Boolean).length - 8}</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Skills */}
-                  {dashSaved.skills.filter(Boolean).length > 0 && (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Skills</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {dashSaved.skills.filter(Boolean).map((s) => (
-                          <span key={s} className="text-xs px-3 py-1.5 rounded-full bg-green-50 border border-green-200 text-[#166534] font-semibold">{s}</span>
-                        ))}
-                      </div>
+                    {/* Actions */}
+                    <div className="border-t border-gray-100 px-6 py-4 flex flex-wrap gap-2">
+                      <Button onClick={() => router.push("/editor")} className="green-gradient text-white font-bold rounded-xl px-4 text-sm">
+                        ✏️ Edit
+                      </Button>
+                      <Button variant="outline" onClick={() => router.push(`/resume-results?jobType=${encodeURIComponent(displayRole)}&city=${encodeURIComponent(displayCity)}&immigrationStatus=`)} className="border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold rounded-xl px-4 text-sm">
+                        ⬇ Download PDF
+                      </Button>
+                      <Button variant="outline" onClick={() => setView("form")} className="border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold rounded-xl px-4 text-sm">
+                        🎯 Retarget Role
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={async () => {
+                          clearLocal();
+                          setSaved(null);
+                          setTargetRole("");
+                          setCity("");
+                          try {
+                            const supabase = createClient();
+                            const { data: { user } } = await supabase.auth.getUser();
+                            if (user) await supabase.from("resumes").delete().eq("user_id", user.id);
+                          } catch { /* non-fatal */ }
+                        }}
+                        className="border-red-100 text-red-400 hover:bg-red-50 font-semibold rounded-xl px-4 text-sm"
+                      >
+                        ✕ Clear
+                      </Button>
                     </div>
-                  )}
-
-                  {/* Education */}
-                  {(dashSaved.education ?? []).length > 0 && (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Education</h3>
-                      <ul className="space-y-1.5">
-                        {(dashSaved.education ?? []).map((e, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
-                            {e}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Certifications */}
-                  {(dashSaved.certifications ?? []).length > 0 && (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Certifications</h3>
-                      <ul className="space-y-1.5">
-                        {(dashSaved.certifications ?? []).map((c, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
-                            {c}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex flex-wrap gap-3">
-                    <Button onClick={() => router.push("/editor")} className="green-gradient text-white font-bold rounded-xl px-5">
-                      ✏️ Edit Resume
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => router.push(`/resume-results?jobType=${encodeURIComponent(displayRole)}`)}
-                      className="border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold rounded-xl px-5"
-                    >
-                      ⬇ Download PDF
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setView("form")}
-                      className="border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold rounded-xl px-5"
-                    >
-                      🎯 Retarget
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setView("upload")}
-                      className="border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold rounded-xl px-5"
-                    >
-                      📤 Upload New
-                    </Button>
                   </div>
-                </>
+                </div>
               )}
             </div>
           )}
