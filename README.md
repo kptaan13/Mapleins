@@ -1,6 +1,6 @@
-# Mapleins — Free Canadian Resume & Job Tools for Newcomers
+﻿# Mapleins â€” Free Canadian Resume & Job Tools for Newcomers
 
-ATS-optimized resumes, job matches, interview prep, and more — built for newcomers to Canada. Free to use, supported by optional donations.
+ATS-optimized resumes, job matches, interview prep, and more â€” built for newcomers to Canada. Free to use, supported by optional donations.
 
 ---
 
@@ -12,23 +12,23 @@ ATS-optimized resumes, job matches, interview prep, and more — built for newco
 | Backend | Next.js API routes (Node.js runtime) |
 | Database & Auth | Supabase (PostgreSQL + Supabase Auth) |
 | AI | Groq (`llama-3.1-8b-instant`) via `src/lib/ai.ts` |
-| PDF Generation | `@react-pdf/renderer` — 3 resume templates |
+| PDF Generation | `@react-pdf/renderer` â€” 3 resume templates |
 | PDF Parsing | `pdf-parse@1.1.1` (pure JS, Vercel-compatible) |
 | Payments | Stripe (one-time donations via Checkout) |
-| Deployment | Vercel (`mapleins-reqj` project → `mapleins.com`) |
+| Deployment | Vercel (`mapleins-reqj` project â†’ `mapleins.com`) |
 
 ---
 
 ## Features
 
-- Upload a PDF resume → AI parses and analyzes it
+- Upload a PDF resume â†’ AI parses and analyzes it
 - ATS score with keyword breakdown and improvement tips
 - 3 resume templates: **Classic** (7 colour themes), **Bay Street** (dark navy sidebar), **Newcomer Bold** (green header band)
 - Edit resume content in the AI-powered editor before downloading
 - Job matching: curated roles by job type + city with salary estimates
-- AI interview prep: 5–7 role-specific questions with STAR method tips
+- AI interview prep: 5â€“7 role-specific questions with STAR method tips
 - Interview checklist with localStorage persistence
-- Feedback widget on all pages — saved to Supabase
+- Feedback widget on all pages â€” saved to Supabase
 - Promo code system (30-day unlimited trial)
 - Admin dashboard: user stats, donation history, feedback viewer
 
@@ -44,7 +44,6 @@ ATS-optimized resumes, job matches, interview prep, and more — built for newco
 | `/resume-results` | ATS score, job matches, interview prep, interview checklist, download |
 | `/editor` | Edit optimized resume, pick template + theme, download PDF |
 | `/donate` | Optional Stripe donation |
-| `/waitlist` | Pre-launch waitlist signup |
 | `/blog` | Blog |
 | `/about` / `/contact` | Company pages |
 | `/admin` | Admin-only: users, donations, feedback |
@@ -55,10 +54,10 @@ ATS-optimized resumes, job matches, interview prep, and more — built for newco
 
 ## User Flow
 
-1. Sign up → Dashboard
-2. Upload PDF resume → AI parses and analyzes it
+1. Sign up â†’ Dashboard
+2. Upload PDF resume â†’ AI parses and analyzes it
 3. Set job type, city, immigration status (sector pre-filled by AI)
-4. Click "Get My ATS Resume + Jobs" → Resume Results page
+4. Click "Get My ATS Resume + Jobs" â†’ Resume Results page
 5. View ATS score, download optimized resume (3 free downloads)
 6. Explore job matches with salary ranges and application tips
 7. Read AI-generated interview prep questions + general tips
@@ -115,17 +114,11 @@ NEXT_PUBLIC_SITE_URL=https://mapleins.com
 # Admin
 ADMIN_EMAIL=your@email.com
 
-# Feature flags (both required — see note below)
-WAITLIST_ONLY=false
-NEXT_PUBLIC_WAITLIST_ONLY=false
-
 # Promo code for 30-day free trial
 PROMO_CODE=YOUR_SECRET_CODE_HERE
 ```
 
 > **Important:** `NEXT_PUBLIC_*` variables are baked into the JS bundle at build time. After changing them in Vercel, you must trigger a fresh redeploy with "use existing build cache" unchecked, otherwise the old value stays active in the frontend.
-
-> **Two flags needed:** `WAITLIST_ONLY` controls server-side middleware redirects. `NEXT_PUBLIC_WAITLIST_ONLY` controls the homepage UI. Both must be set.
 
 ### 3. Supabase tables
 
@@ -166,16 +159,6 @@ create table payments (
   paid_at timestamptz
 );
 
--- Waitlist
-create table waitlist (
-  id uuid primary key default gen_random_uuid(),
-  name text,
-  email text unique,
-  city text,
-  immigration_status text,
-  created_at timestamptz default now()
-);
-
 -- Feedback
 create table feedback (
   id uuid primary key default gen_random_uuid(),
@@ -190,24 +173,22 @@ create table feedback (
 -- RLS
 alter table profiles enable row level security;
 alter table payments enable row level security;
-alter table waitlist enable row level security;
 alter table feedback enable row level security;
 
 create policy "Users read own profile" on profiles for select using (auth.uid() = id);
 create policy "Service role manages profiles" on profiles using (true) with check (true);
 create policy "Service role manages payments" on payments using (true) with check (true);
-create policy "Anyone can join waitlist" on waitlist for insert with check (true);
 create policy "Anyone can submit feedback" on feedback for insert with check (true);
 ```
 
-In Supabase → Authentication → URL Configuration, add:
+In Supabase â†’ Authentication â†’ URL Configuration, add:
 - Site URL: `http://localhost:3000`
 - Redirect URLs: `http://localhost:3000/auth/callback`, `https://mapleins.com/auth/callback`
 
 ### 4. Stripe
 
 1. Create an account at [stripe.com](https://stripe.com)
-2. Get API keys from Dashboard → Developers → API keys
+2. Get API keys from Dashboard â†’ Developers â†’ API keys
 3. Create a webhook pointing to `https://mapleins.com/api/stripe/webhook` for the `checkout.session.completed` event
 4. Copy the webhook signing secret into `STRIPE_WEBHOOK_SECRET`
 
@@ -237,7 +218,6 @@ Open [http://localhost:3000](http://localhost:3000).
 | `/api/promo/redeem` | POST | Validate promo code, return expiry |
 | `/api/feedback` | POST | Save feedback to Supabase |
 | `/api/feedback` | GET | Admin-only: fetch all feedback |
-| `/api/waitlist` | POST | Add email to waitlist |
 | `/api/email-capture` | POST | General email capture |
 | `/api/admin/check` | GET | Verify current user is admin |
 | `/api/auth/signout` | POST | Sign out |
@@ -248,7 +228,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Deploying to Vercel
 
 1. Push to GitHub
-2. Import the repo in Vercel — the active production project is `mapleins-reqj` (custom domain `mapleins.com` points here)
+2. Import the repo in Vercel â€” the active production project is `mapleins-reqj` (custom domain `mapleins.com` points here)
 3. Add all environment variables listed above
-4. Set both `WAITLIST_ONLY=false` and `NEXT_PUBLIC_WAITLIST_ONLY=false`
-5. Deploy — uncheck "use existing build cache" if you changed any `NEXT_PUBLIC_*` vars
+4. Deploy â€” uncheck "use existing build cache" if you changed any `NEXT_PUBLIC_*` vars
+

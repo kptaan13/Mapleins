@@ -1,11 +1,19 @@
 /**
- * Example PDF extraction tool — returns raw text from an uploaded PDF.
+ * Example PDF extraction tool - returns raw text from an uploaded PDF.
  * POST multipart/form-data with field "file" (PDF).
- * Response: { text: string } or { error: string }
  */
 export const runtime = "nodejs";
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { withApiHandler } from "@/lib/api/route";
+import { ApiError } from "@/lib/api/error";
+
+const fileMetaSchema = z.object({
+  name: z.string().min(1).max(256),
+  type: z.string().max(128),
+  size: z.number().int().positive().max(10 * 1024 * 1024),
+});
 
 async function extractTextFromBuffer(buffer: Buffer): Promise<string> {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -16,35 +24,44 @@ async function extractTextFromBuffer(buffer: Buffer): Promise<string> {
   return result?.text?.trim() ?? "";
 }
 
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withApiHandler(
+  async (request: NextRequest) => {
     const contentType = request.headers.get("content-type") ?? "";
     if (!contentType.includes("multipart/form-data")) {
-      return Response.json(
-        { error: "Send a PDF file as multipart/form-data with field 'file'." },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Send a PDF file as multipart/form-data with field 'file'.", {
+        code: "INVALID_CONTENT_TYPE",
+      });
     }
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     if (!file || file.size === 0) {
-      return Response.json({ error: "No file or empty file." }, { status: 400 });
+      throw new ApiError(400, "No file or empty file.", { code: "MISSING_FILE" });
     }
-    const isPdf =
-      file.type === "application/pdf" ||
-      (file.name && file.name.toLowerCase().endsWith(".pdf"));
+
+    const meta = fileMetaSchema.safeParse({
+      name: file.name || "upload.pdf",
+      type: file.type || "",
+      size: file.size,
+    });
+    if (!meta.success) {
+      throw new ApiError(400, "Invalid file metadata.", {
+        code: "INVALID_FILE_METADATA",
+        details: meta.error.flatten(),
+      });
+    }
+
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
     if (!isPdf) {
-      return Response.json({ error: "File must be a PDF (application/pdf)." }, { status: 400 });
+      throw new ApiError(400, "File must be a PDF (application/pdf).", { code: "INVALID_FILE_TYPE" });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const text = await extractTextFromBuffer(buffer);
-
-    return Response.json({ text, fileName: file.name });
-  } catch (err) {
-    console.error("PDF extract error:", err);
-    const message = err instanceof Error ? err.message : "Extraction failed";
-    return Response.json({ error: message }, { status: 500 });
+    const text = await extractTextFromBuffer(Buffer.from(await file.arrayBuffer()));
+    return NextResponse.json({ text, fileName: file.name });
+  },
+  {
+    routeKey: "api:tools-pdf-text",
+    rateLimit: { limit: 15, windowMs: 60_000 },
   }
-}
+);
+

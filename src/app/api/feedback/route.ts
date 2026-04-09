@@ -1,44 +1,65 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { withApiHandler, parseJsonBody } from "@/lib/api/route";
+import { getClientIp } from "@/lib/rate-limit";
+import { verifyCaptcha } from "@/lib/captcha";
+import { ApiError } from "@/lib/api/error";
 
-export async function POST(req: NextRequest) {
-  try {
-    const { rating, category, message, email, page } = await req.json();
+const feedbackSchema = z.object({
+  rating: z.number().int().min(1).max(5).nullable().optional(),
+  category: z.string().trim().max(80).nullable().optional(),
+  message: z.string().trim().min(1).max(3000),
+  email: z.string().email().max(320).nullable().optional(),
+  page: z.string().trim().max(256).nullable().optional(),
+  captchaToken: z.string().min(1).max(4000).optional().nullable(),
+});
 
-    if (!message || typeof message !== "string" || !message.trim()) {
-      return NextResponse.json({ error: "Message is required." }, { status: 400 });
-    }
+export const POST = withApiHandler(
+  async (req: NextRequest) => {
+    const { rating, category, message, email, page, captchaToken } = await parseJsonBody(
+      req,
+      feedbackSchema
+    );
+
+    await verifyCaptcha({
+      token: captchaToken,
+      ip: getClientIp(req),
+      expectedAction: "feedback_submit",
+    });
 
     const supabase = await createClient();
-
     const { error } = await supabase.from("feedback").insert({
       rating: rating ?? null,
       category: category ?? null,
       message: message.trim(),
-      email: email?.trim() || null,
+      email: email?.trim().toLowerCase() || null,
       page: page ?? null,
     });
 
     if (error) {
-      console.error("Feedback insert error:", error);
-      return NextResponse.json({ error: "Failed to save feedback." }, { status: 500 });
+      throw new ApiError(500, "Failed to save feedback.", {
+        code: "FEEDBACK_INSERT_FAILED",
+        details: error.message,
+      });
     }
 
     return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("Feedback route error:", err);
-    return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
+  },
+  {
+    routeKey: "api:feedback-post",
+    rateLimit: { limit: 10, windowMs: 60_000 },
   }
-}
+);
 
-export async function GET(req: NextRequest) {
-  // Admin-only: return all feedback
-  try {
+export const GET = withApiHandler(
+  async (req: NextRequest) => {
     const checkRes = await fetch(new URL("/api/admin/check", req.url), {
       headers: { cookie: req.headers.get("cookie") || "" },
     });
-    if (!checkRes.ok || (await checkRes.json()).admin !== true) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const checkBody = (await checkRes.json()) as { admin?: boolean };
+    if (!checkRes.ok || checkBody.admin !== true) {
+      throw new ApiError(401, "Unauthorized", { code: "UNAUTHORIZED" });
     }
 
     const supabase = await createClient();
@@ -48,10 +69,18 @@ export async function GET(req: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(100);
 
-    if (error) throw error;
+    if (error) {
+      throw new ApiError(500, "Failed to load feedback.", {
+        code: "FEEDBACK_FETCH_FAILED",
+        details: error.message,
+      });
+    }
+
     return NextResponse.json({ feedback: data });
-  } catch (err) {
-    console.error("Feedback GET error:", err);
-    return NextResponse.json({ error: "Failed to load feedback." }, { status: 500 });
+  },
+  {
+    routeKey: "api:feedback-get",
+    rateLimit: { limit: 60, windowMs: 60_000 },
   }
-}
+);
+

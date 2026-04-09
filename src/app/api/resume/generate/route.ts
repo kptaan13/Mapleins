@@ -8,6 +8,7 @@
  * 4. This route renders MapleinsResumePDF → returns PDF bytes
  */
 import { NextRequest } from "next/server";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 import React from "react";
@@ -35,6 +36,7 @@ import {
   extractJDKeywords,
 } from "@/lib/competencyProfiles";
 import { extractTextFromPDFUrl } from "@/lib/pdfExtract";
+import { parseJsonBody, withApiHandler } from "@/lib/api/route";
 
 // ─── Placeholder filter ───────────────────────────────────────────────────────
 
@@ -1107,30 +1109,59 @@ export async function GET(request: NextRequest) {
   return buildPdfResponse(refined, jobType, city, undefined, theme);
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { jobType, city, parsedData, version, jobDescription, skipRefinement, theme } = body as {
-      jobType?: string;
-      city?: string;
-      version?: ResumeVersion;
-      theme?: ThemeName;
-      jobDescription?: string;
-      skipRefinement?: boolean;
-      parsedData?: {
-        name?: string;
-        email?: string;
-        phone?: string;
-        summary?: string;
-        experience?: string[];
-        experienceByRole?: ExperienceEntry[];
-        skillCategories?: SkillCategory[];
-        skills?: string[];
-        certifications?: string[];
-        education?: string[];
-        yearsOfExperience?: number;
-      };
-    };
+const experienceEntrySchema = z.object({
+  role: z.string().max(160),
+  company: z.string().max(160),
+  dates: z.string().max(100).optional(),
+  bullets: z.array(z.string().max(400)).max(60),
+  yearsInRole: z.number().optional(),
+});
+
+const skillCategorySchema = z.object({
+  category: z.string().max(120),
+  skills: z.array(z.string().max(120)).max(40),
+});
+
+const parsedDataSchema = z.object({
+  name: z.string().max(160).optional(),
+  email: z.string().max(320).optional(),
+  phone: z.string().max(80).optional(),
+  summary: z.string().max(6000).optional(),
+  experience: z.array(z.string().max(400)).max(200).optional(),
+  experienceByRole: z.array(experienceEntrySchema).max(50).optional(),
+  skillCategories: z.array(skillCategorySchema).max(12).optional(),
+  skills: z.array(z.string().max(120)).max(200).optional(),
+  certifications: z.array(z.string().max(180)).max(80).optional(),
+  education: z.array(z.string().max(240)).max(80).optional(),
+  yearsOfExperience: z.number().min(0).max(80).optional(),
+});
+
+const generateBodySchema = z.object({
+  jobType: z.string().max(120).optional(),
+  city: z.string().max(120).optional(),
+  version: z.enum(["ats", "leadership", "concise"]).optional(),
+  theme: z
+    .enum([
+      "classic",
+      "navy",
+      "minimal",
+      "executive",
+      "modern",
+      "federal",
+      "bay-street",
+      "vancouver",
+      "newcomer",
+    ])
+    .optional(),
+  jobDescription: z.string().max(20_000).optional(),
+  skipRefinement: z.boolean().optional(),
+  parsedData: parsedDataSchema.optional(),
+});
+
+export const POST = withApiHandler(
+  async (request: NextRequest) => {
+    const { jobType, city, parsedData, version, jobDescription, skipRefinement, theme } =
+      await parseJsonBody(request, generateBodySchema);
 
     const jt = jobType || "Retail";
     const c = city || "Toronto";
@@ -1141,28 +1172,21 @@ export async function POST(request: NextRequest) {
     const fallback = getFallbackResume(jt, c);
     const parsed = parsedData ? buildParsedResume(parsedData, fallback) : fallback;
 
-    // When skipRefinement is true (e.g. from Live Editor), use content as-is so the PDF matches what the user saved
     if (skipRefinement) {
       return buildPdfResponse(parsed, jt, c, "Mapleins-Resume.pdf", t);
     }
 
-    // Apply pre-processing: re-rank bullets by relevance to target role
     const enhanced = applyCompetencyEnhancements(parsed, jt);
-
-    // AI refinement with version + JD keyword injection
     const refined = await refineResumeForATS(enhanced, jt, c, v, jdKeywords);
 
-    const versionLabel =
-      v === "leadership" ? "Leadership" : v === "concise" ? "Concise" : "ATS";
+    const versionLabel = v === "leadership" ? "Leadership" : v === "concise" ? "Concise" : "ATS";
     const themeLabel = t !== "classic" ? `-${t.charAt(0).toUpperCase() + t.slice(1)}` : "";
     const filename = `Mapleins-Resume-${versionLabel}${themeLabel}.pdf`;
 
     return buildPdfResponse(refined, jt, c, filename, t);
-  } catch (err) {
-    console.error("Generate POST error:", err);
-    return Response.json(
-      { error: err instanceof Error ? err.message : "Generation failed" },
-      { status: 500 }
-    );
+  },
+  {
+    routeKey: "api:resume-generate",
+    rateLimit: { limit: 20, windowMs: 60_000 },
   }
-}
+);

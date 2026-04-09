@@ -3,6 +3,8 @@
  * Primary: Groq (free, cloud, ~2 sec)
  * Fallback: Ollama (local)
  */
+import { fetchWithTimeoutRetry } from "@/lib/net";
+import { logEvent } from "@/lib/logger";
 
 export type AIMessage = {
   role: "system" | "user" | "assistant";
@@ -29,19 +31,23 @@ async function callGroq(messages: AIMessage[]): Promise<string> {
     throw new Error("GROQ_API_KEY not configured");
   }
 
-  const res = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${GROQ_API_KEY}`,
+  const res = await fetchWithTimeoutRetry(
+    `${GROQ_BASE_URL}/chat/completions`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages,
+        temperature: 0.3,
+        max_tokens: Number(process.env.AI_MAX_TOKENS) || 4096,
+      }),
     },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      messages,
-      temperature: 0.3,
-      max_tokens: Number(process.env.AI_MAX_TOKENS) || 4096,
-    }),
-  });
+    { retries: 1, timeoutMs: Number(process.env.AI_TIMEOUT_MS) || 20000 }
+  );
 
   if (!res.ok) {
     const text = await res.text();
@@ -58,15 +64,19 @@ async function callGroq(messages: AIMessage[]): Promise<string> {
  * Call local Ollama AI (fallback)
  */
 async function callOllama(messages: AIMessage[]): Promise<string> {
-  const res = await fetch(`${OLLAMA_URL}/api/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: OLLAMA_MODEL,
-      messages,
-      stream: false,
-    }),
-  });
+  const res = await fetchWithTimeoutRetry(
+    `${OLLAMA_URL}/api/chat`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        messages,
+        stream: false,
+      }),
+    },
+    { retries: 1, timeoutMs: Number(process.env.AI_OLLAMA_TIMEOUT_MS) || 12000 }
+  );
 
   if (!res.ok) {
     const text = await res.text();
@@ -83,18 +93,38 @@ async function callOllama(messages: AIMessage[]): Promise<string> {
  * Main AI call — tries Groq first, falls back to Ollama
  */
 export async function callAI(messages: AIMessage[]): Promise<AIResponse> {
+  const startedAt = Date.now();
   // Try Groq first
   if (GROQ_API_KEY && GROQ_API_KEY !== "your_groq_api_key_here") {
     try {
       const content = await callGroq(messages);
+      logEvent({
+        level: "info",
+        event: "ai.call",
+        provider: "groq",
+        latencyMs: Date.now() - startedAt,
+      });
       return { content, provider: "groq" };
     } catch (err) {
-      console.warn("Groq failed, falling back to Ollama:", err);
+      logEvent({
+        level: "warn",
+        event: "ai.call",
+        provider: "groq",
+        latencyMs: Date.now() - startedAt,
+        errorCode: "AI_PROVIDER_FAILED",
+        details: err,
+      });
     }
   }
 
   // Fallback to Ollama
   const content = await callOllama(messages);
+  logEvent({
+    level: "info",
+    event: "ai.call",
+    provider: "ollama",
+    latencyMs: Date.now() - startedAt,
+  });
   return { content, provider: "ollama" };
 }
 

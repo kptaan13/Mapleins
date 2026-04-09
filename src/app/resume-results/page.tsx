@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { JobSuggestion, JobsResponse } from "@/app/api/resume/jobs/route";
 import { getCompetencyProfile, detectSkillGaps, extractJDKeywords } from "@/lib/competencyProfiles";
-import { STRIPE_DONATION_LINK } from "@/lib/constants";
+import { shouldShowPaywall } from "@/lib/paywall";
 
 // ─── Version History ──────────────────────────────────────────────────────────
 
@@ -218,8 +218,6 @@ function ResumeResultsContent() {
   const [selectedTheme, setSelectedTheme] = useState("federal");
   const [downloadDataMissing, setDownloadDataMissing] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
-  const [donating, setDonating] = useState(false);
-  const [donationError, setDonationError] = useState<string | null>(null);
 
   // Post-download success + email capture
   const [downloadSuccess, setDownloadSuccess] = useState(false);
@@ -234,8 +232,6 @@ function ResumeResultsContent() {
 
   const [jobsData, setJobsData] = useState<JobsResponse | null>(null);
   const [jobsLoading, setJobsLoading] = useState(false);
-  const [jobsError, setJobsError] = useState(false);
-  const [jobsSkippedNoData, setJobsSkippedNoData] = useState(false);
 
   const [skillGap, setSkillGap] = useState<{
     missing: string[];
@@ -335,14 +331,11 @@ function ResumeResultsContent() {
 
     if (!hasData) {
       setJobsData({ jobs: [], summary: "" });
-      setJobsSkippedNoData(true);
       setJobsLoading(false);
       return;
     }
-    setJobsSkippedNoData(false);
 
     setJobsLoading(true);
-    setJobsError(false);
     try {
       const res = await fetch("/api/resume/jobs", {
         method: "POST",
@@ -361,7 +354,7 @@ function ResumeResultsContent() {
       const data: JobsResponse = await res.json();
       setJobsData(data);
     } catch {
-      setJobsError(true);
+      // Keep existing empty-state UI on failure.
     } finally {
       setJobsLoading(false);
     }
@@ -406,7 +399,15 @@ function ResumeResultsContent() {
     // Freemium gate: soft paywall after FREE_DOWNLOAD_LIMIT
     const savedEmail = (() => { try { return localStorage.getItem("mapleins_capture_email") || ""; } catch { return ""; } })();
     const isUnlimited = UNLIMITED_EMAILS.includes(savedEmail.toLowerCase().trim());
-    if (!skipPaywallCheck && !isUnlimited && !getPromoTrial() && getFreeDownloadCount() >= FREE_DOWNLOAD_LIMIT) {
+    if (
+      !skipPaywallCheck &&
+      shouldShowPaywall({
+        freeDownloadCount: getFreeDownloadCount(),
+        freeDownloadLimit: FREE_DOWNLOAD_LIMIT,
+        hasPromoTrial: getPromoTrial(),
+        isUnlimited,
+      })
+    ) {
       setShowPaywall(true);
       return;
     }

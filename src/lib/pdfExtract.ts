@@ -7,6 +7,8 @@ import { writeFile, unlink, mkdtemp, rmdir } from "fs/promises";
 import { promisify } from "util";
 import { join } from "path";
 import { tmpdir } from "os";
+import { assertSafeRemoteUrl } from "@/lib/security/remote-url";
+import { fetchWithTimeoutRetry } from "@/lib/net";
 
 const execFileAsync = promisify(execFile);
 
@@ -68,7 +70,12 @@ export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
  * Fetch a PDF from a URL and extract its text.
  */
 export async function extractTextFromPDFUrl(url: string): Promise<string> {
-  const res = await fetch(url);
+  const safeUrl = await assertSafeRemoteUrl(url);
+  const res = await fetchWithTimeoutRetry(
+    safeUrl.toString(),
+    undefined,
+    { retries: 1, timeoutMs: Number(process.env.REMOTE_PDF_FETCH_TIMEOUT_MS) || 12000 }
+  );
   if (!res.ok) throw new Error(`PDF fetch failed: ${res.status}`);
   const buffer = Buffer.from(await res.arrayBuffer());
   return extractTextFromPDF(buffer);

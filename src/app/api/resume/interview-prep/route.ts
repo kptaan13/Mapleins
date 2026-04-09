@@ -1,25 +1,27 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { callAI, parseAIJson } from "@/lib/ai";
+import { withApiHandler, parseJsonBody } from "@/lib/api/route";
 
 export type InterviewPrepResponse = {
   questions: { question: string; tip: string }[];
   generalTips: string[];
 };
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { jobType, city, targetRole, skills, summary } = body as {
-      jobType: string;
-      city?: string;
-      targetRole?: string;
-      skills?: string[];
-      summary?: string;
-    };
+const interviewPrepSchema = z.object({
+  jobType: z.string().trim().min(1).max(120),
+  city: z.string().max(120).optional(),
+  targetRole: z.string().max(120).optional(),
+  skills: z.array(z.string().max(120)).max(50).optional(),
+  summary: z.string().max(1500).optional(),
+});
 
-    if (!jobType) {
-      return Response.json({ questions: [], generalTips: [] } satisfies InterviewPrepResponse);
-    }
+export const POST = withApiHandler(
+  async (req: NextRequest) => {
+    const { jobType, city, targetRole, skills, summary } = await parseJsonBody(
+      req,
+      interviewPrepSchema
+    );
 
     const role = targetRole || jobType;
     const location = city || "Canada";
@@ -32,7 +34,7 @@ Generate interview preparation content for a ${role} role in ${location}, Canada
 
 Rules:
 - Write 5 to 7 behavioral or situational interview questions relevant to ${role} positions.
-- For each question, include a short tip (1–2 sentences) on how to answer it well (e.g., use STAR method, mention specific tools, highlight Canadian workplace values like teamwork and safety).
+- For each question, include a short tip (1-2 sentences) on how to answer it well (e.g., use STAR method, mention specific tools, highlight Canadian workplace values like teamwork and safety).
 - Write 3 to 4 general interview tips specific to the ${jobType} industry in Canada.
 - Keep language simple and practical for newcomers to Canada.
 - Canadian spelling.
@@ -69,9 +71,11 @@ Return the JSON.`;
       parsed = { questions: [], generalTips: [] };
     }
 
-    return Response.json(parsed);
-  } catch (err) {
-    console.error("/api/resume/interview-prep error:", err);
-    return Response.json({ questions: [], generalTips: [] } satisfies InterviewPrepResponse);
+    return NextResponse.json(parsed);
+  },
+  {
+    routeKey: "api:resume-interview-prep",
+    rateLimit: { limit: 30, windowMs: 60_000 },
   }
-}
+);
+

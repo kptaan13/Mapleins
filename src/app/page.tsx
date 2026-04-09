@@ -323,7 +323,7 @@ export default function LandingPage() {
                 <ul className="space-y-4 text-sm text-gray-500 font-medium">
                   <li><Link href="#how-it-works" className="hover:text-[#166534] transition-colors">How it Works</Link></li>
                   <li><Link href="/signup" className="hover:text-[#166534] transition-colors">Get Started</Link></li>
-                  <li><Link href="/waitlist" className="hover:text-[#166534] transition-colors">Join Waitlist</Link></li>
+                  <li><Link href="/dashboard" className="hover:text-[#166534] transition-colors">Dashboard</Link></li>
                 </ul>
               </div>
             )}

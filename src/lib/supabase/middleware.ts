@@ -29,11 +29,7 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  const waitlistOnly = process.env.WAITLIST_ONLY === "true";
-
-  // When waitlist-only: only these pages are reachable (no login, signup, blog, etc.)
-  const waitlistPublicPaths = ["/", "/waitlist", "/about", "/donate", "/contact"];
-  const fullPublicPaths = [
+  const publicPaths = [
     "/",
     "/login",
     "/signup",
@@ -47,15 +43,7 @@ export async function updateSession(request: NextRequest) {
     "/cookies",
     "/waitlist",
   ];
-  const publicPaths = waitlistOnly ? waitlistPublicPaths : fullPublicPaths;
   const isPublic = publicPaths.includes(pathname) || pathname.startsWith("/api");
-
-  // In waitlist-only mode (typically production), redirect all non-public routes to /waitlist
-  if (waitlistOnly && !isPublic) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/waitlist";
-    return NextResponse.redirect(url);
-  }
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

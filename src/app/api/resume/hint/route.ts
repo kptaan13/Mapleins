@@ -1,27 +1,34 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { callAI, parseAIJson } from "@/lib/ai";
+import { parseJsonBody, withApiHandler } from "@/lib/api/route";
 
 export type HintResponse = {
   hint: string;
-  alternatives: string[]; // 3 improved rewrites the user can click-to-swap
+  alternatives: string[];
 };
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { field, value, context } = body as {
-      field: string;
-      value: string;
-      context?: { jobType?: string; city?: string };
-    };
+const hintSchema = z.object({
+  field: z.string().min(1).max(100),
+  value: z.string().max(4000),
+  context: z
+    .object({
+      jobType: z.string().max(120).optional(),
+      city: z.string().max(120).optional(),
+    })
+    .optional(),
+});
 
-    if (!field || !value?.trim()) {
-      return Response.json({ hint: "", alternatives: [] } satisfies HintResponse);
+export const POST = withApiHandler(
+  async (req: NextRequest) => {
+    const { field, value, context } = await parseJsonBody(req, hintSchema);
+
+    if (!value.trim()) {
+      return NextResponse.json({ hint: "", alternatives: [] } satisfies HintResponse);
     }
 
     const jobType = context?.jobType || "General";
     const city = context?.city || "Canada";
-    // Editor sends exp_role_0_0 for role bullets; exp_0 for flat experience
     const isExperience = field.startsWith("experience") || field.startsWith("exp_");
 
     const systemPrompt = `You are a Canadian resume expert specialising in ATS-optimised resumes.
@@ -33,7 +40,7 @@ Your job:
 Rules for rewrites:
 - Use strong action verbs (Led, Managed, Delivered, Improved, Achieved, Reduced, Built, Drove, Oversaw, Streamlined).
 - Add measurable impact wherever reasonable (%, numbers, team sizes, time saved).
-- Keep them concise (1 sentence each for bullets, 2–3 sentences for summaries).
+- Keep them concise (1 sentence each for bullets, 2-3 sentences for summaries).
 - Tailor to ${jobType} roles in ${city}, Canada.
 - Canadian spelling.
 - Do NOT fabricate employers, degrees, or dates.
@@ -45,7 +52,6 @@ Return ONLY valid JSON, no markdown:
 }`;
 
     const userPrompt = `Field: ${field}\nContent:\n${value.slice(0, 1000)}\n\nReturn the JSON.`;
-
     const { content } = await callAI([
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
@@ -54,23 +60,22 @@ Return ONLY valid JSON, no markdown:
     let parsed: HintResponse;
     try {
       parsed = parseAIJson<HintResponse>(content);
-      // Validate shape
       if (!parsed.hint) parsed.hint = "";
       if (!Array.isArray(parsed.alternatives)) parsed.alternatives = [];
       parsed.alternatives = parsed.alternatives.slice(0, 3).filter(Boolean);
     } catch {
-      // Fallback: return raw content as hint
       parsed = { hint: content.trim().slice(0, 300), alternatives: [] };
     }
 
-    // For summary field, don't show alternatives that are too short
     if (!isExperience) {
       parsed.alternatives = parsed.alternatives.filter((a) => a.length > 30);
     }
 
-    return Response.json(parsed);
-  } catch (err) {
-    console.error("/api/resume/hint error:", err);
-    return Response.json({ hint: "", alternatives: [] } satisfies HintResponse);
+    return NextResponse.json(parsed);
+  },
+  {
+    routeKey: "api:resume-hint",
+    rateLimit: { limit: 60, windowMs: 60_000 },
   }
-}
+);
+

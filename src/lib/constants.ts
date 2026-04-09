@@ -28,6 +28,5 @@ export const STRIPE_DONATION_LINK =
     ? process.env.NEXT_PUBLIC_STRIPE_DONATION_LINK.trim()
     : null;
 
-export const WAITLIST_ONLY =
-  typeof process.env.NEXT_PUBLIC_WAITLIST_ONLY === "string" &&
-  process.env.NEXT_PUBLIC_WAITLIST_ONLY.trim().toLowerCase() === "true";
+// Waitlist mode has been retired now that the product is live.
+export const WAITLIST_ONLY = false;

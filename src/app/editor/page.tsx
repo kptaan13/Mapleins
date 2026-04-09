@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { ExperienceEntry } from "@/lib/resumeUtils";
+import { shouldShowPaywall } from "@/lib/paywall";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -321,18 +322,6 @@ function EditorContent() {
       return { ...r, experienceByRole: roles };
     });
 
-  const _saveResume = () => {
-    setSaveStatus("saving");
-    try {
-      const existingRaw = sessionStorage.getItem("mapleinsResumeAnalysis");
-      const existing = existingRaw ? JSON.parse(existingRaw) : {};
-      const toStore = { ...existing, ...resume, targetRole: jobType, city };
-      sessionStorage.setItem("mapleinsResumeAnalysis", JSON.stringify(toStore));
-      setTimeout(() => setSaveStatus("saved"), 300);
-      setTimeout(() => setSaveStatus("idle"), 2000);
-    } catch { setSaveStatus("idle"); }
-  };
-
   const generateWithAI = async () => {
     setAiGenerating(true);
     try {
@@ -365,7 +354,15 @@ function EditorContent() {
   const incrementFreeDownloadCount = () => { try { localStorage.setItem(FREE_DOWNLOAD_KEY, String(getFreeDownloadCount() + 1)); } catch { /* ignore */ } };
 
   const downloadPdf = async (skipPaywallCheck = false) => {
-    if (!skipPaywallCheck && !getPromoTrial() && getFreeDownloadCount() >= FREE_DOWNLOAD_LIMIT) {
+    if (
+      !skipPaywallCheck &&
+      shouldShowPaywall({
+        freeDownloadCount: getFreeDownloadCount(),
+        freeDownloadLimit: FREE_DOWNLOAD_LIMIT,
+        hasPromoTrial: getPromoTrial(),
+        isUnlimited: false,
+      })
+    ) {
       setShowEditorPaywall(true);
       return;
     }

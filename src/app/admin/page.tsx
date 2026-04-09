@@ -48,8 +48,6 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [emailSending, setEmailSending] = useState(false);
-  const [emailResult, setEmailResult] = useState<{ sent: number; failed: number } | null>(null);
 
   useEffect(() => {
     async function loadStats() {
@@ -64,7 +62,6 @@ export default function AdminPage() {
         return;
       }
 
-      // Server-side middleware protects /admin; verify admin email client-side too
       const checkRes = await fetch("/api/admin/check");
       if (!checkRes.ok || (await checkRes.json()).admin !== true) {
         router.push("/dashboard");
@@ -72,7 +69,6 @@ export default function AdminPage() {
       }
 
       try {
-        // Fetch profiles / users
         const { data: profiles, error: profilesErr } = await supabase
           .from("profiles")
           .select("id, email, created_at, has_paid, paid_at")
@@ -81,7 +77,6 @@ export default function AdminPage() {
 
         if (profilesErr) throw profilesErr;
 
-        // Fetch payments
         const { data: payments, error: paymentsErr } = await supabase
           .from("payments")
           .select("*")
@@ -90,7 +85,6 @@ export default function AdminPage() {
 
         if (paymentsErr) throw paymentsErr;
 
-        // Fetch feedback
         const { data: feedback } = await supabase
           .from("feedback")
           .select("*")
@@ -100,7 +94,6 @@ export default function AdminPage() {
         const users = (profiles || []) as UserRow[];
         const pays = (payments || []) as PaymentRow[];
 
-        // Enrich payments with user emails
         const enriched = pays.map((p) => ({
           ...p,
           user_email: users.find((u) => u.id === p.user_id)?.email || "Unknown",
@@ -137,10 +130,12 @@ export default function AdminPage() {
     const csv = [
       headers.join(","),
       ...rows.map((r) =>
-        headers.map((h) => {
-          const v = String(r[h] ?? "").replace(/"/g, '""');
-          return `"${v}"`;
-        }).join(",")
+        headers
+          .map((h) => {
+            const v = String(r[h] ?? "").replace(/"/g, '""');
+            return `"${v}"`;
+          })
+          .join(",")
       ),
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -154,7 +149,10 @@ export default function AdminPage() {
 
   const handleDownloadUsers = async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("profiles").select("id, email, has_paid, paid_at, created_at").order("created_at", { ascending: false });
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, email, has_paid, paid_at, created_at")
+      .order("created_at", { ascending: false });
     downloadCSV("mapleins-users.csv", (data || []) as Record<string, unknown>[]);
   };
 
@@ -164,32 +162,10 @@ export default function AdminPage() {
     downloadCSV("mapleins-payments.csv", (data || []) as Record<string, unknown>[]);
   };
 
-  const handleDownloadWaitlist = async () => {
-    const supabase = createClient();
-    const { data } = await supabase.from("waitlist").select("*").order("created_at", { ascending: false });
-    downloadCSV("mapleins-waitlist.csv", (data || []) as Record<string, unknown>[]);
-  };
-
   const handleDownloadFeedback = async () => {
     const supabase = createClient();
     const { data } = await supabase.from("feedback").select("*").order("created_at", { ascending: false });
     downloadCSV("mapleins-feedback.csv", (data || []) as Record<string, unknown>[]);
-  };
-
-  const handleSendWaitlistEmail = async () => {
-    if (!confirm("Send the promo email to all waitlist members?")) return;
-    setEmailSending(true);
-    setEmailResult(null);
-    try {
-      const res = await fetch("/api/admin/send-waitlist-email", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
-      setEmailResult({ sent: data.sent, failed: data.failed });
-    } catch (err) {
-      alert("Error sending emails: " + (err as Error).message);
-    } finally {
-      setEmailSending(false);
-    }
   };
 
   return (
@@ -224,39 +200,8 @@ export default function AdminPage() {
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Admin Dashboard</h1>
             <p className="text-gray-500 text-sm">Overview of users, donations, and platform activity.</p>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <button
-              onClick={handleSendWaitlistEmail}
-              disabled={emailSending}
-              className="flex items-center gap-2 bg-[#166534] text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-[#14532d] disabled:opacity-50 transition-colors"
-            >
-              {emailSending ? (
-                <>
-                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                  </svg>
-                  Sending…
-                </>
-              ) : (
-                <>
-                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  Email Waitlist
-                </>
-              )}
-            </button>
-            {emailResult && (
-              <p className="text-xs text-gray-500">
-                <span className="text-green-700 font-semibold">{emailResult.sent} sent</span>
-                {emailResult.failed > 0 && <span className="text-red-500 ml-2">{emailResult.failed} failed</span>}
-              </p>
-            )}
-          </div>
         </div>
 
-        {/* Export buttons */}
         <div className="flex flex-wrap gap-2 mb-8">
           <button onClick={handleDownloadUsers} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-2 rounded-lg hover:border-[#166534] hover:text-[#166534] transition-colors">
             <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
@@ -266,10 +211,6 @@ export default function AdminPage() {
             <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             Payments CSV
           </button>
-          <button onClick={handleDownloadWaitlist} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-2 rounded-lg hover:border-[#166534] hover:text-[#166534] transition-colors">
-            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-            Waitlist CSV
-          </button>
           <button onClick={handleDownloadFeedback} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-2 rounded-lg hover:border-[#166534] hover:text-[#166534] transition-colors">
             <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             Feedback CSV
@@ -277,7 +218,7 @@ export default function AdminPage() {
         </div>
 
         {loading && (
-          <div className="text-center py-20 text-gray-400">Loading stats…</div>
+          <div className="text-center py-20 text-gray-400">Loading stats...</div>
         )}
 
         {error && (
@@ -288,7 +229,6 @@ export default function AdminPage() {
 
         {stats && (
           <>
-            {/* KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
               <div className="bg-white rounded-xl border p-6">
                 <p className="text-sm text-gray-500 mb-1">Total Users</p>
@@ -298,10 +238,7 @@ export default function AdminPage() {
                 <p className="text-sm text-gray-500 mb-1">Donors</p>
                 <p className="text-3xl font-bold text-[#166534]">{stats.paidUsers}</p>
                 <p className="text-xs text-gray-400 mt-1">
-                  {stats.totalUsers > 0
-                    ? Math.round((stats.paidUsers / stats.totalUsers) * 100)
-                    : 0}
-                  % donated
+                  {stats.totalUsers > 0 ? Math.round((stats.paidUsers / stats.totalUsers) * 100) : 0}% donated
                 </p>
               </div>
               <div className="bg-white rounded-xl border p-6">
@@ -314,11 +251,8 @@ export default function AdminPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Recent Donations */}
               <div className="bg-white rounded-xl border p-6">
-                <h2 className="text-base font-semibold text-gray-900 mb-4">
-                  Recent Donations
-                </h2>
+                <h2 className="text-base font-semibold text-gray-900 mb-4">Recent Donations</h2>
                 {stats.recentPayments.length === 0 ? (
                   <p className="text-sm text-gray-400">No donations yet.</p>
                 ) : (
@@ -334,15 +268,9 @@ export default function AdminPage() {
                       <tbody>
                         {stats.recentPayments.map((p) => (
                           <tr key={p.id} className="border-b last:border-0">
-                            <td className="py-2 text-gray-700 truncate max-w-[180px]">
-                              {p.user_email}
-                            </td>
-                            <td className="py-2 text-[#166534] font-medium">
-                              ${p.amount} {p.currency?.toUpperCase()}
-                            </td>
-                            <td className="py-2 text-gray-400">
-                              {new Date(p.paid_at).toLocaleDateString("en-CA")}
-                            </td>
+                            <td className="py-2 text-gray-700 truncate max-w-[180px]">{p.user_email}</td>
+                            <td className="py-2 text-[#166534] font-medium">${p.amount} {p.currency?.toUpperCase()}</td>
+                            <td className="py-2 text-gray-400">{new Date(p.paid_at).toLocaleDateString("en-CA")}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -351,11 +279,8 @@ export default function AdminPage() {
                 )}
               </div>
 
-              {/* Recent Users */}
               <div className="bg-white rounded-xl border p-6">
-                <h2 className="text-base font-semibold text-gray-900 mb-4">
-                  Recent Users
-                </h2>
+                <h2 className="text-base font-semibold text-gray-900 mb-4">Recent Users</h2>
                 {stats.recentUsers.length === 0 ? (
                   <p className="text-sm text-gray-400">No users yet.</p>
                 ) : (
@@ -371,23 +296,15 @@ export default function AdminPage() {
                       <tbody>
                         {stats.recentUsers.map((u) => (
                           <tr key={u.id} className="border-b last:border-0">
-                            <td className="py-2 text-gray-700 truncate max-w-[200px]">
-                              {u.email}
-                            </td>
+                            <td className="py-2 text-gray-700 truncate max-w-[200px]">{u.email}</td>
                             <td className="py-2">
                               {u.has_paid ? (
-                                <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">
-                                  Yes
-                                </span>
+                                <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">Yes</span>
                               ) : (
-                                <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">
-                                  No
-                                </span>
+                                <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">No</span>
                               )}
                             </td>
-                            <td className="py-2 text-gray-400">
-                              {new Date(u.created_at).toLocaleDateString("en-CA")}
-                            </td>
+                            <td className="py-2 text-gray-400">{new Date(u.created_at).toLocaleDateString("en-CA")}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -397,7 +314,6 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Feedback */}
             <div className="bg-white rounded-xl border p-6 mt-6">
               <h2 className="text-base font-semibold text-gray-900 mb-4">
                 User Feedback
@@ -420,14 +336,10 @@ export default function AdminPage() {
                             {f.category && (
                               <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{f.category}</span>
                             )}
-                            {f.page && (
-                              <span className="text-xs text-gray-400">{f.page}</span>
-                            )}
+                            {f.page && <span className="text-xs text-gray-400">{f.page}</span>}
                           </div>
                           <p className="text-sm text-gray-800">{f.message}</p>
-                          {f.email && (
-                            <p className="text-xs text-[#166534] mt-1">{f.email}</p>
-                          )}
+                          {f.email && <p className="text-xs text-[#166534] mt-1">{f.email}</p>}
                         </div>
                         <span className="text-xs text-gray-400 whitespace-nowrap">
                           {new Date(f.created_at).toLocaleDateString("en-CA")}
