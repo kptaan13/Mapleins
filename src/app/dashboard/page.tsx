@@ -14,8 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { IMMIGRATION_STATUSES } from "@/lib/constants";
-
-type ExperienceEntry = { role: string; company: string; dates?: string; bullets: string[] };
+import type { ExperienceEntry } from "@/lib/resumeUtils";
 
 type AnalysisResult = {
   name: string;
@@ -48,9 +47,7 @@ function loadLocal(): AnalysisResult | null {
   } catch { return null; }
 }
 function saveLocal(data: AnalysisResult) {
-  const raw = JSON.stringify(data);
-  try { localStorage.setItem(STORAGE_KEY, raw); } catch { /* ignore */ }
-  try { sessionStorage.setItem(STORAGE_KEY, raw); } catch { /* ignore */ }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch { /* ignore */ }
 }
 function clearLocal() {
   try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
@@ -252,14 +249,13 @@ function atsColor(score: number | undefined): string {
 export default function DashboardPage() {
   const router = useRouter();
 
-  const [view, setView] = useState<"loading" | "home" | "upload" | "form" | "dashboard">("loading");
+  const [view, setView] = useState<"loading" | "upload" | "form" | "dashboard">("loading");
   const [activeSection, setActiveSection] = useState<DashboardSection>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [saved, setSaved] = useState<AnalysisResult | null>(null);
   const [savedUpdatedAt, setSavedUpdatedAt] = useState<string | null>(null);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [resumeUrl, setResumeUrl] = useState("");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
 
   const [targetRole, setTargetRole] = useState("");
@@ -322,30 +318,28 @@ export default function DashboardPage() {
   const [interviewTab, setInterviewTab] = useState<"questions" | "tips" | "star">("questions");
   const [openQuestion, setOpenQuestion] = useState<number | null>(null);
 
-  // ── Load saved resume on mount ──
+  // ── Mount: load resume + checklist ──
   useEffect(() => {
+    // Checklist is synchronous — load immediately
+    setCheckedItems(loadChecklist());
+
     async function load() {
-      // 1. Show localStorage instantly — avoids any blank-page flash
+      // Show localStorage instantly to avoid any flash
       const local = loadLocal();
       if (local) {
         setSaved(local);
         if (local.targetRole) setTargetRole(local.targetRole);
         if (local.city) setCity(local.city);
-        setView("dashboard"); // show dashboard immediately from cache
+        setView("dashboard");
       }
-      // 2. Sync with Supabase in the background
+      // Sync with Supabase in background
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setView("dashboard"); // unauthenticated — still show dashboard (empty state)
-          return;
-        }
+        if (!user) { setView("dashboard"); return; }
         const { data } = await supabase
-          .from("resumes")
-          .select("analysis, updated_at")
-          .eq("user_id", user.id)
-          .single();
+          .from("resumes").select("analysis, updated_at")
+          .eq("user_id", user.id).single();
         if (data?.analysis) {
           const r = data.analysis as AnalysisResult;
           setSaved(r);
@@ -356,16 +350,11 @@ export default function DashboardPage() {
         }
         setView("dashboard");
       } catch {
-        setView("dashboard"); // always resolve, never stay on loading
+        setView("dashboard");
       }
     }
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Load checklist from localStorage ──
-  useEffect(() => {
-    setCheckedItems(loadChecklist());
   }, []);
 
   // ── File handling ──
@@ -417,7 +406,6 @@ export default function DashboardPage() {
       } else {
         const { data: urlData } = supabase.storage.from("resumes").getPublicUrl(fileName);
         url = urlData.publicUrl;
-        setResumeUrl(url);
       }
 
       setAnalyzing(true);
@@ -437,13 +425,11 @@ export default function DashboardPage() {
 
       saveLocal(data);
       try {
-        const { data: { user: u2 } } = await supabase.auth.getUser();
-        if (u2) {
-          await supabase.from("resumes").upsert(
-            { user_id: u2.id, analysis: data, updated_at: new Date().toISOString() },
-            { onConflict: "user_id" }
-          );
-        }
+        // Reuse the `user` already fetched above — no second getUser() call needed
+        await supabase.from("resumes").upsert(
+          { user_id: user.id, analysis: data, updated_at: new Date().toISOString() },
+          { onConflict: "user_id" }
+        );
       } catch { /* non-fatal */ }
 
       setView("form");
@@ -486,13 +472,21 @@ export default function DashboardPage() {
         } catch { /* non-fatal */ }
       })();
     }
-    const params = new URLSearchParams({
-      jobType: targetRole.trim(),
-      city: city.trim(),
-      immigrationStatus,
-      ...(resumeUrl && { resumeUrl }),
-    });
+    const params = new URLSearchParams({ jobType: targetRole.trim(), city: city.trim(), immigrationStatus });
     router.push(`/resume-results?${params.toString()}`);
+  };
+
+  // ── Clear saved resume ──
+  const handleClearResume = async () => {
+    clearLocal();
+    setSaved(null);
+    setTargetRole("");
+    setCity("");
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) await supabase.from("resumes").delete().eq("user_id", user.id);
+    } catch { /* non-fatal */ }
   };
 
   // ── Sign out ──
@@ -555,147 +549,7 @@ export default function DashboardPage() {
     );
   }
 
-  // ── VIEW: Home (saved resume panel) ──
-  if (view === "home") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f0fdf4] via-white to-[#f0f9ff]">
-        <Header />
-        <main className="max-w-xl mx-auto px-4 py-10 space-y-6 reveal-up">
-          <div>
-            <h1 className="text-3xl font-black text-gray-900 leading-tight">
-              {saved ? "Welcome back 👋" : "Let's build your"}<br />
-              <span className="text-gradient">{saved ? "Your resume is ready" : "Canadian resume"}</span>
-            </h1>
-            <p className="mt-3 text-gray-500 text-sm leading-relaxed">
-              {saved
-                ? "Pick up where you left off — no upload needed. Or start fresh with a new resume."
-                : "AI scans for ATS gaps, weak bullet points, and missing Canadian keywords — then rebuilds your resume."}
-            </p>
-          </div>
 
-          {saved && (
-            <div className="rounded-2xl border border-green-200 bg-white shadow-sm overflow-hidden">
-              <div className="green-gradient px-5 py-4 flex items-center justify-between">
-                <div>
-                  <p className="font-black text-white text-sm">
-                    📄 {saved.name && saved.name !== "Your Name" ? saved.name : "Your Resume"}
-                  </p>
-                  <p className="text-green-100 text-xs mt-0.5">
-                    {saved.email && <span className="mr-3">{saved.email}</span>}
-                    {saved.yearsOfExperience ? `${saved.yearsOfExperience}y experience` : ""}
-                  </p>
-                </div>
-                <button
-                  onClick={async () => {
-                    clearLocal();
-                    setSaved(null);
-                    setTargetRole("");
-                    setCity("");
-                    try {
-                      const supabase = createClient();
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (user) await supabase.from("resumes").delete().eq("user_id", user.id);
-                    } catch { /* non-fatal */ }
-                  }}
-                  className="text-green-200 hover:text-white text-xs font-semibold transition-colors"
-                  title="Clear saved resume"
-                >
-                  Clear ✕
-                </button>
-              </div>
-
-              {(saved.experienceByRole ?? []).length > 0 && (
-                <div className="px-5 pt-4 pb-2">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Work experience</p>
-                  <div className="space-y-1.5">
-                    {(saved.experienceByRole ?? []).slice(0, 3).map((r, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <span className="mt-1 w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
-                        <p className="text-xs text-gray-700 leading-snug">
-                          <span className="font-semibold">{r.role}</span>
-                          {r.company && <span className="text-gray-400"> · {r.company}</span>}
-                          {r.dates && <span className="text-gray-400"> · {r.dates}</span>}
-                        </p>
-                      </div>
-                    ))}
-                    {(saved.experienceByRole ?? []).length > 3 && (
-                      <p className="text-[11px] text-gray-400 pl-3.5">+{(saved.experienceByRole ?? []).length - 3} more roles</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {saved.skills?.filter(Boolean).length > 0 && (
-                <div className="px-5 pt-3 pb-4">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Skills</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {saved.skills.filter(Boolean).slice(0, 6).map((s) => (
-                      <span key={s} className="text-[11px] px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-[#166534] font-semibold">{s}</span>
-                    ))}
-                    {saved.skills.filter(Boolean).length > 6 && (
-                      <span className="text-[11px] px-2.5 py-1 rounded-full bg-gray-50 border border-gray-200 text-gray-400 font-semibold">+{saved.skills.filter(Boolean).length - 6}</span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="border-t border-gray-100 px-5 py-4 flex gap-3">
-                <Button
-                  onClick={() => {
-                    setAnalysis(saved);
-                    if (saved.targetRole) setTargetRole(saved.targetRole);
-                    if (saved.city) setCity(saved.city);
-                    setView("form");
-                  }}
-                  className="flex-1 green-gradient text-white font-bold rounded-xl py-5 text-sm shadow hover:opacity-90 transition-all"
-                >
-                  Continue with this resume →
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => router.push("/editor")}
-                  className="border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold rounded-xl px-4 text-sm"
-                >
-                  ✏️ Edit
-                </Button>
-              </div>
-            </div>
-          )}
-
-          <div className={`rounded-2xl border ${saved ? "border-gray-200 bg-white/70" : "border-green-200 bg-white shadow-sm"} overflow-hidden`}>
-            <button
-              type="button"
-              onClick={() => setView("upload")}
-              className="w-full flex items-center gap-4 px-5 py-5 hover:bg-green-50/50 transition-colors text-left"
-            >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${saved ? "bg-gray-100" : "green-gradient shadow-md"}`}>
-                <svg className={`w-5 h-5 ${saved ? "text-gray-400" : "text-white"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className={`font-bold text-sm ${saved ? "text-gray-600" : "text-gray-900"}`}>
-                  {saved ? "Upload a different resume" : "Upload your resume"}
-                </p>
-                <p className="text-xs text-gray-400 mt-0.5">PDF · AI reads it in ~30 seconds</p>
-              </div>
-              <svg className="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => router.push("/editor")}
-            className="w-full text-center text-xs text-[#166534] font-semibold hover:underline"
-          >
-            I don&apos;t have a resume yet — build from scratch →
-          </button>
-        </main>
-      </div>
-    );
-  }
 
   // ── VIEW: Upload new resume ──
   if (view === "upload") {
@@ -790,7 +644,7 @@ export default function DashboardPage() {
                 </Button>
                 <button
                   type="button"
-                  onClick={() => setView(saved ? "dashboard" : "home")}
+                  onClick={() => setView("dashboard")}
                   className="w-full text-center text-xs text-gray-400 font-semibold hover:text-gray-600 transition-colors"
                 >
                   ← Back
@@ -1346,11 +1200,11 @@ export default function DashboardPage() {
                       <div className="px-6 py-4">
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">Skills</p>
                         <div className="flex flex-wrap gap-1.5">
-                          {dashSaved.skills.filter(Boolean).slice(0, 8).map((s) => (
+                          {dashSaved.skills.filter(Boolean).slice(0, 6).map((s) => (
                             <span key={s} className="text-[11px] px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-[#166534] font-semibold">{s}</span>
                           ))}
-                          {dashSaved.skills.filter(Boolean).length > 8 && (
-                            <span className="text-[11px] px-2.5 py-1 rounded-full bg-gray-50 border border-gray-200 text-gray-400">+{dashSaved.skills.filter(Boolean).length - 8}</span>
+                          {dashSaved.skills.filter(Boolean).length > 6 && (
+                            <span className="text-[11px] px-2.5 py-1 rounded-full bg-gray-50 border border-gray-200 text-gray-400">+{dashSaved.skills.filter(Boolean).length - 6}</span>
                           )}
                         </div>
                       </div>
@@ -1369,17 +1223,7 @@ export default function DashboardPage() {
                       </Button>
                       <Button
                         variant="outline"
-                        onClick={async () => {
-                          clearLocal();
-                          setSaved(null);
-                          setTargetRole("");
-                          setCity("");
-                          try {
-                            const supabase = createClient();
-                            const { data: { user } } = await supabase.auth.getUser();
-                            if (user) await supabase.from("resumes").delete().eq("user_id", user.id);
-                          } catch { /* non-fatal */ }
-                        }}
+                        onClick={handleClearResume}
                         className="border-red-100 text-red-400 hover:bg-red-50 font-semibold rounded-xl px-4 text-sm"
                       >
                         ✕ Clear
