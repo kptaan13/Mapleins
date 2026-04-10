@@ -252,7 +252,7 @@ function atsColor(score: number | undefined): string {
 export default function DashboardPage() {
   const router = useRouter();
 
-  const [view, setView] = useState<"home" | "upload" | "form" | "dashboard">("home");
+  const [view, setView] = useState<"loading" | "home" | "upload" | "form" | "dashboard">("loading");
   const [activeSection, setActiveSection] = useState<DashboardSection>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -325,16 +325,22 @@ export default function DashboardPage() {
   // ── Load saved resume on mount ──
   useEffect(() => {
     async function load() {
+      // 1. Show localStorage instantly — avoids any blank-page flash
       const local = loadLocal();
       if (local) {
         setSaved(local);
         if (local.targetRole) setTargetRole(local.targetRole);
         if (local.city) setCity(local.city);
+        setView("dashboard"); // show dashboard immediately from cache
       }
+      // 2. Sync with Supabase in the background
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+          setView("dashboard"); // unauthenticated — still show dashboard (empty state)
+          return;
+        }
         const { data } = await supabase
           .from("resumes")
           .select("analysis, updated_at")
@@ -348,11 +354,9 @@ export default function DashboardPage() {
           if (r.city) setCity(r.city);
           if (data.updated_at) setSavedUpdatedAt(data.updated_at as string);
         }
-        // Always go to dashboard — new users get empty state, returning users see their resume
         setView("dashboard");
       } catch {
-        // Even if Supabase fails, still show dashboard
-        setView("dashboard");
+        setView("dashboard"); // always resolve, never stay on loading
       }
     }
     load();
@@ -538,6 +542,18 @@ export default function DashboardPage() {
       </div>
     </header>
   );
+
+  // ── VIEW: Loading ──
+  if (view === "loading") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#f0fdf4] via-white to-[#f0f9ff] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 green-gradient rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-lg">M</div>
+          <div className="w-6 h-6 border-2 border-[#166534] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
 
   // ── VIEW: Home (saved resume panel) ──
   if (view === "home") {
