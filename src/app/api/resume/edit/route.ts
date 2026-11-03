@@ -3,7 +3,7 @@ import { z } from "zod";
 import { callAI, parseAIJson } from "@/lib/ai";
 import { parseJsonBody, withApiHandler } from "@/lib/api/route";
 
-const SYSTEM_PROMPT = `You are Mapleins, an expert Canadian resume writer and ATS optimization specialist.
+const SYSTEM_PROMPT = `You are Fix My Resume, an expert Canadian resume writer and ATS optimization specialist.
 Your task is to rewrite a candidate's resume so that it strongly matches the TARGET ROLE while remaining fully truthful to their actual experience.
 
 OBJECTIVE

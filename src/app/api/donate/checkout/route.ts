@@ -44,9 +44,9 @@ export const GET = withApiHandler(
               price_data: {
                 currency: "cad",
                 product_data: {
-                  name: "Donation to Mapleins",
+                  name: "Donation to Fix My Resume",
                   description:
-                    "Support Mapleins - free Canadian resume and job-matching tools for job seekers.",
+                    "Support Fix My Resume - free Canadian resume and job-matching tools for job seekers.",
                   images: [],
                 },
                 unit_amount: amountCents,

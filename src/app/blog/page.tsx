@@ -31,7 +31,7 @@ export default function BlogPage() {
       {/* Header */}
       <header className="border-b border-gray-100 sticky top-0 bg-white z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-[#166534] shrink-0">Mapleins</Link>
+          <Link href="/" className="text-2xl font-bold text-[#166534] shrink-0">Fix My Resume</Link>
           <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
             <Link href="/"        className="px-3 py-2 rounded-md text-gray-700 hover:text-[#166534] hover:bg-green-50 transition-colors">Home</Link>
             <Link href="/about"   className="px-3 py-2 rounded-md text-gray-700 hover:text-[#166534] hover:bg-green-50 transition-colors">Our Story</Link>
@@ -83,7 +83,7 @@ export default function BlogPage() {
       {/* Footer */}
       <footer className="border-t border-gray-200 py-6 mt-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-gray-600 font-medium">
-          <span>© {new Date().getFullYear()} Mapleins</span>
+          <span>© {new Date().getFullYear()} Fix My Resume</span>
           <div className="flex gap-6">
             <Link href="/"        className="hover:text-[#166534] transition-colors">Home</Link>
             <Link href="/about"   className="hover:text-[#166534] transition-colors">Our Story</Link>

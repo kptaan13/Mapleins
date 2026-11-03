@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export const metadata = { title: "Privacy Policy — Mapleins" };
+export const metadata = { title: "Privacy Policy — Fix My Resume" };
 
 export default function PrivacyPage() {
   return (
@@ -10,7 +10,7 @@ export default function PrivacyPage() {
       {/* Header */}
       <header className="border-b border-gray-100 sticky top-0 bg-white z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-[#166534] shrink-0">Mapleins</Link>
+          <Link href="/" className="text-2xl font-bold text-[#166534] shrink-0">Fix My Resume</Link>
           <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
             <Link href="/"        className="px-3 py-2 rounded-md text-gray-700 hover:text-[#166534] hover:bg-green-50 transition-colors">Home</Link>
             <Link href="/about"   className="px-3 py-2 rounded-md text-gray-700 hover:text-[#166534] hover:bg-green-50 transition-colors">Our Story</Link>
@@ -39,7 +39,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">1. What we collect</h2>
             <p>
-              When you use Mapleins, we collect information you provide directly — your name, email address, and the resume
+              When you use Fix My Resume, we collect information you provide directly — your name, email address, and the resume
               you upload. We also collect information about your target job type and city so we can tailor our AI recommendations.
             </p>
             <p className="mt-3">
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
               <li>Generate your optimised, ATS-ready resume</li>
               <li>Match you with relevant Canadian job listings</li>
               <li>Send you a receipt for any donation made</li>
-              <li>Improve the Mapleins service over time</li>
+              <li>Improve the Fix My Resume service over time</li>
             </ul>
             <p className="mt-3">
               We do not sell, rent, or share your personal information or resume content with third parties for
@@ -112,7 +112,7 @@ export default function PrivacyPage() {
       {/* Footer */}
       <footer className="border-t border-gray-200 py-6 mt-4">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-gray-600 font-medium">
-          <span>© {new Date().getFullYear()} Mapleins</span>
+          <span>© {new Date().getFullYear()} Fix My Resume</span>
           <div className="flex gap-6">
             <Link href="/"       className="hover:text-[#166534] transition-colors">Home</Link>
             <Link href="/terms"  className="hover:text-[#166534] transition-colors">Terms of Use</Link>

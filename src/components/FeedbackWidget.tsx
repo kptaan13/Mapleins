@@ -72,7 +72,7 @@ export default function FeedbackWidget() {
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
               <div>
                 <h2 className="text-base font-black text-gray-900">Share your feedback</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Help us make Mapleins better</p>
+                <p className="text-xs text-gray-400 mt-0.5">Help us make Fix My Resume better</p>
               </div>
               <button
                 type="button"
@@ -91,7 +91,7 @@ export default function FeedbackWidget() {
                   </svg>
                 </div>
                 <p className="font-black text-gray-900 text-lg mb-1">Thank you!</p>
-                <p className="text-sm text-gray-500">Your feedback helps us improve Mapleins for newcomers.</p>
+                <p className="text-sm text-gray-500">Your feedback helps us improve Fix My Resume for newcomers.</p>
                 <button
                   type="button"
                   onClick={handleClose}

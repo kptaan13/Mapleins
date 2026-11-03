@@ -6,7 +6,7 @@ export default function AboutPage() {
     <div className="min-h-screen bg-white">
       <header className="border-b border-gray-100 sticky top-0 bg-white z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-[#166534] shrink-0">Mapleins</Link>
+          <Link href="/" className="text-2xl font-bold text-[#166534] shrink-0">Fix My Resume</Link>
           <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
             <Link href="/" className="px-3 py-2 rounded-md text-gray-700 hover:text-[#166534] hover:bg-green-50 transition-colors">Home</Link>
             <Link href="/about" className="px-3 py-2 rounded-md text-[#166534] bg-green-50 font-medium">Our Story</Link>
@@ -28,7 +28,7 @@ export default function AboutPage() {
           We built the tool we wished we had when we were applying in Canada
         </h1>
         <p className="mt-5 text-lg text-gray-600">
-          Mapleins started from a simple frustration: sending dozens of applications to Canadian jobs, getting silence back, and having no idea what we were doing wrong.
+          Fix My Resume started from a simple frustration: sending dozens of applications to Canadian jobs, getting silence back, and having no idea what we were doing wrong.
         </p>
       </section>
 
@@ -43,19 +43,19 @@ export default function AboutPage() {
           We thought that was wrong. Good people should not miss good jobs just because they do not know the right Canadian format or ATS tricks.
         </p>
         <p>
-          So we built Mapleins: an AI-powered resume editor and job matcher specifically for the Canadian market. You upload your resume, tell us your target role and city, and we rebuild it with the right keywords, bullet structure, and ATS signals for Canadian employers.
+          So we built Fix My Resume: an AI-powered resume editor and job matcher specifically for the Canadian market. You upload your resume, tell us your target role and city, and we rebuild it with the right keywords, bullet structure, and ATS signals for Canadian employers.
         </p>
         <p className="font-semibold text-gray-900">
-          Mapleins is free. We keep it running through optional donations from users who land interviews and want to pay it forward.
+          Fix My Resume is free. We keep it running through optional donations from users who land interviews and want to pay it forward.
         </p>
         <p>
-          If Mapleins helped you get an interview or a job, we would love to hear your story, and if you can, a small donation helps us keep it free for the next person who needs it.
+          If Fix My Resume helped you get an interview or a job, we would love to hear your story, and if you can, a small donation helps us keep it free for the next person who needs it.
         </p>
 
         <div className="pt-4 flex flex-col sm:flex-row gap-3">
           <Link href="/signup">
             <Button className="bg-[#22c55e] hover:bg-[#16a34a] text-white font-semibold px-6 py-5 h-auto">
-              Try Mapleins Free →
+              Try Fix My Resume Free →
             </Button>
           </Link>
           <Link href="/contact">
@@ -68,7 +68,7 @@ export default function AboutPage() {
 
       <footer className="border-t border-gray-200 py-6">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-gray-600 font-medium">
-          <span>(c) {new Date().getFullYear()} Mapleins</span>
+          <span>(c) {new Date().getFullYear()} Fix My Resume</span>
           <div className="flex gap-6">
             <Link href="/" className="hover:text-[#166534] transition-colors">Home</Link>
             <Link href="/contact" className="hover:text-[#166534] transition-colors">Contact</Link>

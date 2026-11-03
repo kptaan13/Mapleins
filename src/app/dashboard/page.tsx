@@ -123,7 +123,7 @@ const TOTAL_CHECKLIST_ITEMS = CHECKLIST_CATEGORIES.reduce(
   0
 );
 
-type DashboardSection = "overview" | "mapleins-resume" | "interview" | "checklist" | "jobsearch";
+type DashboardSection = "overview" | "fixmyresume-builder" | "interview" | "checklist" | "jobsearch";
 
 // ── Interview Prep data ──
 type InterviewQuestion = { question: string; tip: string; answer: string };
@@ -276,11 +276,11 @@ export default function DashboardPage() {
     new Set(CHECKLIST_CATEGORIES.map((c) => c.id))
   );
 
-  // ── Mapleins Resume: create by title ──
+  // ── Resume Builder: create by title ──
   const [newResumeTitle, setNewResumeTitle] = useState("");
   const [newResumeCity, setNewResumeCity] = useState("");
 
-  // ── Mapleins Resume: create by job description ──
+  // ── Resume Builder: create by job description ──
   const [newResumeJD, setNewResumeJD] = useState("");
   const [jdParsing, setJdParsing] = useState(false);
   const [jdError, setJdError] = useState<string | null>(null);
@@ -525,7 +525,7 @@ export default function DashboardPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2">
           <div className="w-8 h-8 green-gradient rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md">M</div>
-          <span className="text-xl font-bold text-gray-900">Mapleins</span>
+          <span className="text-xl font-bold text-gray-900">Fix My Resume</span>
         </Link>
         <button
           onClick={handleSignOut}
@@ -817,7 +817,7 @@ export default function DashboardPage() {
 
   const navItems: { id: DashboardSection; icon: string; label: string }[] = [
     { id: "overview", icon: "🏠", label: "Overview" },
-    { id: "mapleins-resume", icon: "🍁", label: "Mapleins Resume" },
+    { id: "fixmyresume-builder", icon: "📝", label: "Resume Builder" },
     { id: "interview", icon: "🎤", label: "Interview Prep" },
     { id: "checklist", icon: "✅", label: "Job Checklist" },
     { id: "jobsearch", icon: "🔍", label: "Job Search" },
@@ -841,7 +841,7 @@ export default function DashboardPage() {
             </button>
             <Link href="/dashboard" className="flex items-center gap-2">
               <div className="w-8 h-8 green-gradient rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md">M</div>
-              <span className="text-xl font-bold text-gray-900 hidden sm:block">Mapleins</span>
+              <span className="text-xl font-bold text-gray-900 hidden sm:block">Fix My Resume</span>
             </Link>
           </div>
 
@@ -1029,7 +1029,7 @@ export default function DashboardPage() {
                   <p className="font-bold text-gray-800 text-sm">No resume yet</p>
                   <p className="text-xs text-gray-400 mt-1 mb-4">Create or upload a resume to unlock your ATS score, job matches, and more.</p>
                   <Button
-                    onClick={() => setActiveSection("mapleins-resume")}
+                    onClick={() => setActiveSection("fixmyresume-builder")}
                     className="green-gradient text-white font-bold rounded-xl px-6 text-sm"
                   >
                     Get Started →
@@ -1051,11 +1051,11 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ── SECTION: Mapleins Resume ── */}
-          {activeSection === "mapleins-resume" && (
+          {/* ── SECTION: Fix My Resume Resume ── */}
+          {activeSection === "fixmyresume-builder" && (
             <div className="max-w-3xl mx-auto space-y-5">
               <div>
-                <h1 className="text-2xl font-black text-gray-900">🍁 Mapleins Resume</h1>
+                <h1 className="text-2xl font-black text-gray-900">🍁 Fix My Resume Resume</h1>
                 <p className="text-sm text-gray-500 mt-1">Create a Canadian ATS-optimized resume from scratch, or manage your existing one.</p>
               </div>
 

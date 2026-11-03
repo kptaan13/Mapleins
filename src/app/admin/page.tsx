@@ -174,7 +174,7 @@ export default function AdminPage() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/dashboard" className="text-xl font-bold text-[#166534]">
-              Mapleins
+              Fix My Resume
             </Link>
             <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
               Admin
