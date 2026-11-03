@@ -11,6 +11,7 @@ Optimize the resume for Applicant Tracking Systems (ATS) and Canadian recruiter 
 
 RULES
 - Do not invent experience that does not exist in the resume.
+- Never add numbers, percentages, results, months, or dates that are not in the original resume. Keep every figure exactly as written; if a bullet has no number, strengthen the wording instead of adding one.
 - You may rephrase responsibilities to align with the target role's language and expectations.
 - Job titles may be clarified for clarity but must remain truthful.
 - Promote the most relevant bullets to the top of each position.

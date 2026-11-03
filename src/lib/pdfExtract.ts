@@ -1,5 +1,5 @@
 /**
- * PDF text extraction using pdf-parse (pure JS, works on Vercel serverless).
+ * PDF text extraction using unpdf (pure JS, works on Vercel serverless).
  * Falls back to pdftotext (poppler) when available in local/server environments.
  */
 import { execFile } from "child_process";
@@ -12,19 +12,18 @@ import { fetchWithTimeoutRetry } from "@/lib/net";
 
 const execFileAsync = promisify(execFile);
 
-async function parseWithPdfParse(buffer: Buffer): Promise<string> {
-  // pdf-parse v1 exports a single default function
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const pdfParse = require("pdf-parse");
-  const fn = typeof pdfParse === "function" ? pdfParse : pdfParse.default ?? pdfParse.pdf;
-  if (typeof fn !== "function") throw new Error("pdf-parse not available");
-  const result = await fn(buffer);
-  return result?.text?.trim() ?? "";
+async function parseWithUnpdf(buffer: Buffer): Promise<string> {
+  // unpdf ships a serverless build of Mozilla's current pdf.js.
+  // (pdf-parse v1 bundles pdf.js from 2018 and rejects many valid PDFs with "bad XRef entry".)
+  const { getDocumentProxy, extractText } = await import("unpdf");
+  const pdf = await getDocumentProxy(new Uint8Array(buffer));
+  const { text } = await extractText(pdf, { mergePages: true });
+  return text.trim();
 }
 
 /**
  * Extract plain text from a PDF buffer.
- * Tries pdftotext first (better quality), falls back to pdf-parse (pure JS).
+ * Tries pdftotext first (better quality), falls back to unpdf (pure JS).
  */
 export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   let tmpDir: string | null = null;
@@ -51,7 +50,7 @@ export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
     const text2 = stdout2?.trim() ?? "";
     if (text2.length > 50) return text2;
   } catch {
-    // pdftotext not available (e.g. Vercel) — fall through to pdf-parse
+    // pdftotext not available (e.g. Vercel) — fall through to unpdf
   } finally {
     if (pdfPath) { try { await unlink(pdfPath); } catch { /* ignore */ } }
     if (tmpDir) { try { await rmdir(tmpDir); } catch { /* ignore */ } }
@@ -59,9 +58,9 @@ export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
 
   // Pure-JS fallback — works on all serverless environments
   try {
-    return await parseWithPdfParse(buffer);
+    return await parseWithUnpdf(buffer);
   } catch (err) {
-    console.error("[pdfExtract] pdf-parse failed:", (err as Error).message ?? err);
+    console.error("[pdfExtract] unpdf failed:", (err as Error).message ?? err);
     return "";
   }
 }
