@@ -17,7 +17,8 @@ export type AIResponse = {
 };
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_MODEL = "llama-3.1-8b-instant";
+// llama-3.1-8b-instant was shut down by Groq on 2026-08-16; gpt-oss-20b is Groq's recommended replacement.
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
@@ -44,6 +45,8 @@ async function callGroq(messages: AIMessage[]): Promise<string> {
         messages,
         temperature: 0.3,
         max_tokens: Number(process.env.AI_MAX_TOKENS) || 4096,
+        // gpt-oss models reason before answering; keep it short so the answer fits in max_tokens.
+        ...(GROQ_MODEL.startsWith("openai/gpt-oss") ? { reasoning_effort: "low" } : {}),
       }),
     },
     { retries: 1, timeoutMs: Number(process.env.AI_TIMEOUT_MS) || 20000 }
