@@ -48,9 +48,9 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
             <div className="w-9 h-9 green-gradient rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-              <span className="text-white text-lg font-bold">M</span>
+              <span className="text-white text-lg font-bold">F</span>
             </div>
-            <span className="text-xl font-bold text-gray-900 tracking-tight">Maple<span className="text-[#166534]">ins</span></span>
+            <span className="text-xl font-bold text-gray-900 tracking-tight">Fix My <span className="text-[#166534]">Resume</span></span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -431,7 +431,7 @@ export default function LandingPage() {
           <div className={`grid grid-cols-2 gap-10 mb-16 ${WAITLIST_ONLY ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
             <div className="col-span-2 lg:col-span-1">
               <Link href="/" className="flex items-center gap-2 mb-5">
-                <div className="w-8 h-8 green-gradient rounded-lg flex items-center justify-center text-white font-bold text-sm">M</div>
+                <div className="w-8 h-8 green-gradient rounded-lg flex items-center justify-center text-white font-bold text-sm">F</div>
                 <span className="text-lg font-bold text-gray-900">Fix My Resume</span>
               </Link>
               <p className="text-gray-400 text-sm leading-relaxed mb-6">
