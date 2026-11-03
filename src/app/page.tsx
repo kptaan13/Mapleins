@@ -48,9 +48,9 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
             <div className="w-9 h-9 green-gradient rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-              <span className="text-white text-lg font-bold">M</span>
+              <span className="text-white text-lg font-bold">F</span>
             </div>
-            <span className="text-xl font-bold text-gray-900 tracking-tight">Maple<span className="text-[#166534]">ins</span></span>
+            <span className="text-xl font-bold text-gray-900 tracking-tight">Fix My <span className="text-[#166534]">Resume</span></span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -122,7 +122,7 @@ export default function LandingPage() {
 
           <p className="max-w-2xl mx-auto text-xl text-gray-500 mb-4 leading-relaxed">
             Canadian employers use ATS software that filters out most resumes before a human ever reads them.
-            Mapleins rewrites yours in 2 minutes — so you finally get the call.
+            Fix My Resume rewrites yours in 2 minutes — so you finally get the call.
           </p>
 
           <p className="text-sm font-bold text-[#166534] mb-10 uppercase tracking-widest">
@@ -186,7 +186,7 @@ export default function LandingPage() {
             <p className="text-green-300 font-bold text-lg">
               &ldquo;It&apos;s not your experience that&apos;s the problem — it&apos;s the translation.&rdquo;
             </p>
-            <p className="text-green-500 text-sm mt-2">Mapleins exists to close that gap.</p>
+            <p className="text-green-500 text-sm mt-2">Fix My Resume exists to close that gap.</p>
           </div>
         </div>
       </section>
@@ -196,14 +196,14 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-16">
             <p className="text-[#166534] text-xs font-black uppercase tracking-widest mb-3">Real transformation</p>
-            <h2 className="text-4xl font-extrabold text-gray-900">What Mapleins actually does</h2>
+            <h2 className="text-4xl font-extrabold text-gray-900">What Fix My Resume actually does</h2>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 items-start">
             {/* Before */}
             <div className="rounded-2xl border-2 border-red-200 overflow-hidden">
               <div className="bg-red-50 px-6 py-3 flex items-center gap-2 border-b border-red-200">
-                <span className="text-red-500 font-black text-sm uppercase tracking-widest">Before Mapleins</span>
+                <span className="text-red-500 font-black text-sm uppercase tracking-widest">Before Fix My Resume</span>
                 <span className="ml-auto text-xs font-bold bg-red-100 text-red-500 px-3 py-1 rounded-full">ATS Score: 34</span>
               </div>
               <div className="bg-white p-6 space-y-4">
@@ -233,7 +233,7 @@ export default function LandingPage() {
             {/* After */}
             <div className="rounded-2xl border-2 border-green-300 overflow-hidden shadow-lg">
               <div className="bg-green-50 px-6 py-3 flex items-center gap-2 border-b border-green-200">
-                <span className="text-[#166534] font-black text-sm uppercase tracking-widest">After Mapleins</span>
+                <span className="text-[#166534] font-black text-sm uppercase tracking-widest">After Fix My Resume</span>
                 <span className="ml-auto text-xs font-bold bg-green-200 text-green-800 px-3 py-1 rounded-full">ATS Score: 91</span>
               </div>
               <div className="bg-white p-6 space-y-4">
@@ -431,8 +431,8 @@ export default function LandingPage() {
           <div className={`grid grid-cols-2 gap-10 mb-16 ${WAITLIST_ONLY ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
             <div className="col-span-2 lg:col-span-1">
               <Link href="/" className="flex items-center gap-2 mb-5">
-                <div className="w-8 h-8 green-gradient rounded-lg flex items-center justify-center text-white font-bold text-sm">M</div>
-                <span className="text-lg font-bold text-gray-900">Mapleins</span>
+                <div className="w-8 h-8 green-gradient rounded-lg flex items-center justify-center text-white font-bold text-sm">F</div>
+                <span className="text-lg font-bold text-gray-900">Fix My Resume</span>
               </Link>
               <p className="text-gray-400 text-sm leading-relaxed mb-6">
                 Built for newcomers to Canada who deserve a fair shot at their dream career.
@@ -478,7 +478,7 @@ export default function LandingPage() {
           </div>
 
           <div className="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-300 font-medium uppercase tracking-widest">
-            <p>© {new Date().getFullYear()} Mapleins. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} Fix My Resume. All rights reserved.</p>
             {!WAITLIST_ONLY && (
               <div className="flex gap-6">
                 <Link href="/terms" className="hover:text-gray-600 transition-colors">Terms</Link>

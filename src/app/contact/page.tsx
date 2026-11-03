@@ -20,7 +20,7 @@ export default function ContactPage() {
     <div className="min-h-screen bg-white">
       <header className="border-b border-gray-100 sticky top-0 bg-white z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-[#166534] shrink-0">Mapleins</Link>
+          <Link href="/" className="text-2xl font-bold text-[#166534] shrink-0">Fix My Resume</Link>
           <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
             <Link href="/" className="px-3 py-2 rounded-md text-gray-700 hover:text-[#166534] hover:bg-green-50 transition-colors">Home</Link>
             <Link href="/about" className="px-3 py-2 rounded-md text-gray-700 hover:text-[#166534] hover:bg-green-50 transition-colors">Our Story</Link>
@@ -158,9 +158,9 @@ export default function ContactPage() {
             <div className="rounded-xl border p-5 flex gap-4 items-start">
               <span className="text-2xl">Support</span>
               <div>
-                <p className="font-semibold text-gray-900">Support Mapleins</p>
+                <p className="font-semibold text-gray-900">Support Fix My Resume</p>
                 <p className="text-sm text-gray-500 mt-1">
-                  Mapleins is free. If it helped you, consider a small donation to keep it free for the next newcomer.
+                  Fix My Resume is free. If it helped you, consider a small donation to keep it free for the next newcomer.
                 </p>
                 <Link href="/donate" className="mt-2 inline-block text-sm font-semibold text-[#166534] hover:underline">
                   Donate →
@@ -183,7 +183,7 @@ export default function ContactPage() {
 
       <footer className="border-t border-gray-200 py-6 mt-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-gray-600 font-medium">
-          <span>(c) {new Date().getFullYear()} Mapleins</span>
+          <span>(c) {new Date().getFullYear()} Fix My Resume</span>
           <div className="flex gap-6">
             <Link href="/" className="hover:text-[#166534] transition-colors">Home</Link>
             <Link href="/about" className="hover:text-[#166534] transition-colors">Our Story</Link>

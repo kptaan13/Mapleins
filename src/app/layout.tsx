@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import FeedbackWidget from "@/components/FeedbackWidget";
 
-const siteTitle = "Mapleins - Get Canadian Job Interviews or Pay Nothing";
+const siteTitle = "Fix My Resume - Get Canadian Job Interviews or Pay Nothing";
 const siteDescription =
   "Free Canadian resume format, ATS optimization, curated jobs, and interview prep. Optional donation to support us.";
 

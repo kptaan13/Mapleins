@@ -1,5 +1,5 @@
 /**
- * Shared AI utility for Mapleins
+ * Shared AI utility for Fix My Resume
  * Primary: Groq (free, cloud, ~2 sec)
  * Fallback: Ollama (local)
  */

@@ -16,7 +16,7 @@ function InterviewPrepPDF() {
     React.createElement(
       Page,
       { size: "A4", style: styles.page },
-      React.createElement(Text, { style: styles.title }, "Mapleins Interview Prep Guide"),
+      React.createElement(Text, { style: styles.title }, "Fix My Resume Interview Prep Guide"),
       React.createElement(
         View,
         { style: styles.section },
@@ -61,7 +61,7 @@ export async function GET() {
   return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": 'attachment; filename="Mapleins-Interview-Prep.pdf"',
+      "Content-Disposition": 'attachment; filename="FixMyResume-Interview-Prep.pdf"',
     },
   });
 }

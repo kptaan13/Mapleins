@@ -8,7 +8,7 @@ export default function CookiesPage() {
       <header className="border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link href="/" className="text-xl font-bold text-[#166534]">
-            Mapleins
+            Fix My Resume
           </Link>
           <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">
             Go to app
@@ -19,7 +19,7 @@ export default function CookiesPage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Cookies</h1>
         <p className="text-sm text-gray-600 mb-6">
-          Mapleins uses only essential cookies needed to keep you signed in and secure your account. We do not use
+          Fix My Resume uses only essential cookies needed to keep you signed in and secure your account. We do not use
           advertising cookies or third-party tracking cookies.
         </p>
         <p className="text-sm text-gray-600 mb-2">

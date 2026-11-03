@@ -467,7 +467,7 @@ function ResumeResultsContent() {
           throw new Error(message);
         }
         const blob = await res.blob();
-        triggerBrowserDownload(blob, "Mapleins-Resume.pdf");
+        triggerBrowserDownload(blob, "FixMyResume-Resume.pdf");
         // Save version + track count
         incrementFreeDownloadCount();
         const version: ResumeVersion = {
@@ -514,7 +514,7 @@ function ResumeResultsContent() {
         throw new Error(message);
       }
       const blob = await res.blob();
-      triggerBrowserDownload(blob, "Mapleins-Resume.pdf");
+      triggerBrowserDownload(blob, "FixMyResume-Resume.pdf");
       incrementFreeDownloadCount();
       setDownloadSuccess(true);
     } catch (err) {
@@ -555,7 +555,7 @@ function ResumeResultsContent() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Mapleins-${v.jobType}-${v.theme}.pdf`;
+      a.download = `FixMyResume-${v.jobType}-${v.theme}.pdf`;
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -570,7 +570,7 @@ function ResumeResultsContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="w-8 h-8 green-gradient rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md">M</div>
-            <span className="text-xl font-bold text-gray-900">Mapleins</span>
+            <span className="text-xl font-bold text-gray-900">Fix My Resume</span>
           </Link>
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="text-sm font-bold text-gray-500 hover:text-[#166534] transition-colors">New Scan</Link>
@@ -1205,7 +1205,7 @@ function ResumeResultsContent() {
                   href="/donate"
                   className="block w-full green-gradient text-white py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all text-center"
                 >
-                  ❤️ Support Mapleins — keep it free
+                  ❤️ Support Fix My Resume — keep it free
                 </Link>
 
                 {/* Promo code */}
