@@ -16,12 +16,10 @@ const fileMetaSchema = z.object({
 });
 
 async function extractTextFromBuffer(buffer: Buffer): Promise<string> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const pdfParse = require("pdf-parse");
-  const fn = typeof pdfParse === "function" ? pdfParse : pdfParse.default ?? pdfParse.pdf;
-  if (typeof fn !== "function") throw new Error("pdf-parse not available");
-  const result = await fn(buffer);
-  return result?.text?.trim() ?? "";
+  const { getDocumentProxy, extractText } = await import("unpdf");
+  const pdf = await getDocumentProxy(new Uint8Array(buffer));
+  const { text } = await extractText(pdf, { mergePages: true });
+  return text.trim();
 }
 
 export const POST = withApiHandler(
